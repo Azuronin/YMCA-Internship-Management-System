@@ -1,0 +1,297 @@
+﻿@model List<IMS.Models.Announcements>
+@{
+    ViewData["Title"] = "Announcements";
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+<h2 class="mb-4">Announcements Management</h2>
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<!-- Header with search and create button -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div class="d-flex gap-2 flex-grow-1" style="max-width: 500px;">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search announcements..." />
+        </div>
+        <div class="input-group" style="width: 180px;">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar text-muted"></i></span>
+            <input id="dateFilter" type="date" class="form-control border-start-0" />
+        </div>
+    </div>
+
+    <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createAnnouncementModal">
+        <i class="fas fa-plus"></i> New Announcement
+    </button>
+</div>
+
+<!-- Announcement cards -->
+@if (!Model.Any())
+{
+    <div class="text-center py-5 bg-light rounded">
+        <i class="fas fa-bullhorn display-4 text-muted mb-3"></i>
+        <h4 class="text-muted">No announcements yet</h4>
+        <p class="text-muted">Click "New Announcement" to create your first announcement</p>
+    </div>
+}
+else
+{
+    <div id="announcementsContainer">
+        @foreach (var a in Model)
+        {
+            <div class="announcement-card mb-4 p-4 border rounded bg-white shadow-sm announcement-item"
+                 data-title="@a.Title.ToLower()" data-type="@a.Type.ToLower()" data-message="@a.Message.ToLower()" data-date="@a.DatePosted.ToString("yyyy-MM-dd")">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="mb-1 text-primary">@a.Title</h5>
+                    <span class="badge @GetBadgeClass(a.Type)">@a.Type</span>
+                </div>
+                <div>
+                    <p class="text-muted small mb-1" style=" word-wrap:break-word; max-width:300px;">
+                        @a.Message
+                    </p>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                    
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Posted on @a.DatePosted.ToString("MMMM dd, yyyy 'at' hh:mm tt")
+                        | Posted By: @(a.Poster != null ? a.Poster.FirstName + " " + a.Poster.LastName + " - " + a.Poster.Position : "Admin")
+                    </small>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                                onclick="openEditModal(@a.AnnouncementId, '@a.Title', '@a.Type', `@a.Message.Replace("'", "\\'")`)">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <form asp-action="DeleteAnnouncement" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@a.AnnouncementId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
+                                    onclick="return confirm('Are you sure you want to delete this announcement?')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Create Announcement Modal -->
+<div class="modal fade" id="createAnnouncementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form asp-action="Announcements" method="post" id="postForm">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i>Create New Announcement</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title</label>
+                        <input name="Title" class="form-control" placeholder="Enter announcement title" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Type</label>
+                        <select name="Type" class="form-select" id="typeSelect" required onchange="toggleCustomType(this)">
+                            <option value="" selected disabled>Select announcement type</option>
+                            <option>Reminder</option>
+                            <option>Deadline</option>
+                            <option>Absence</option>
+                            <option>General</option>
+                            <option value="__custom__">Other</option>
+                        </select>
+                        <input type="text" id="customTypeInput" class="form-control mt-2 d-none" placeholder="Enter custom type..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Message</label>
+                        <textarea name="Message" class="form-control" rows="5" placeholder="Enter announcement message" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>Post Announcement</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="editForm" method="post" asp-action="EditAnnouncement">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Announcement</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="AnnouncementId" id="editId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title</label>
+                        <input name="Title" id="editTitle" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Type</label>
+                        <select name="Type" id="editType" class="form-select" required onchange="toggleEditCustomType(this)">
+                            <option value="" disabled>Select announcement type</option>
+                            <option>Reminder</option>
+                            <option>Deadline</option>
+                            <option>Absence</option>
+                            <option>General</option>
+                            <option value="__custom__">Other</option>
+                        </select>
+                        <input type="text" id="editCustomTypeInput" class="form-control mt-2 d-none" placeholder="Enter custom type..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Message</label>
+                        <textarea name="Message" id="editMessage" class="form-control" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditModal(id, title, type, message) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editMessage').value = message;
+
+            const select = document.getElementById('editType');
+            const customInput = document.getElementById('editCustomTypeInput');
+            const predefined = ["Reminder", "Deadline", "Absence", "General"];
+
+            if (!predefined.includes(type)) {
+                select.value = "__custom__";
+                customInput.classList.remove('d-none');
+                customInput.value = type;
+            } else {
+                select.value = type;
+                customInput.classList.add('d-none');
+                customInput.value = "";
+            }
+
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        function toggleCustomType(select) {
+            const input = document.getElementById("customTypeInput");
+            if (select.value === "__custom__") {
+                input.classList.remove("d-none");
+                input.required = true;
+            } else {
+                input.classList.add("d-none");
+                input.required = false;
+                input.value = "";
+            }
+        }
+
+        function toggleEditCustomType(select) {
+            const input = document.getElementById("editCustomTypeInput");
+            if (select.value === "__custom__") {
+                input.classList.remove("d-none");
+                input.required = true;
+            } else {
+                input.classList.add("d-none");
+                input.required = false;
+                input.value = "";
+            }
+        }
+
+        document.getElementById('postForm').addEventListener('submit', function () {
+            const select = document.getElementById('typeSelect');
+            const custom = document.getElementById('customTypeInput');
+            if (select.value === "__custom__" && custom.value.trim() !== "") {
+                custom.name = "Type";
+                select.name = "";
+            }
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function () {
+            const select = document.getElementById('editType');
+            const custom = document.getElementById('editCustomTypeInput');
+            if (select.value === "__custom__" && custom.value.trim() !== "") {
+                custom.name = "Type";
+                select.name = "";
+            }
+        });
+
+        const searchInput = document.getElementById("searchInput");
+        const dateFilter = document.getElementById("dateFilter");
+        const items = document.querySelectorAll(".announcement-item");
+
+        function applyFilters() {
+            const search = searchInput.value.toLowerCase();
+            const date = dateFilter.value;
+            items.forEach(item => {
+                const matchText = item.dataset.title + item.dataset.type + item.dataset.message;
+                const matchDate = item.dataset.date;
+                const visible = (!search || matchText.includes(search)) &&
+                                (!date || matchDate === date);
+                item.style.display = visible ? "block" : "none";
+            });
+
+            // Show message if no results
+            const visibleItems = document.querySelectorAll('.announcement-item[style="block"]');
+            if (items.length > 0 && visibleItems.length === 0) {
+                if (!document.getElementById('noResults')) {
+                    const noResults = document.createElement('div');
+                    noResults.id = 'noResults';
+                    noResults.className = 'text-center py-5 bg-light rounded';
+                    noResults.innerHTML = `
+                        <i class="fas fa-search display-4 text-muted mb-3"></i>
+                        <h4 class="text-muted">No matching announcements</h4>
+                        <p class="text-muted">Try adjusting your search or filter</p>
+                    `;
+                    document.getElementById('announcementsContainer').appendChild(noResults);
+                }
+            } else {
+                const noResults = document.getElementById('noResults');
+                if (noResults) noResults.remove();
+            }
+        }
+
+        searchInput.addEventListener("input", applyFilters);
+        dateFilter.addEventListener("change", applyFilters);
+
+        // Initialize with empty state if needed
+        if (items.length === 0) {
+            document.getElementById('searchInput').disabled = true;
+            document.getElementById('dateFilter').disabled = true;
+        }
+    </script>
+}
+
+@functions {
+    private string GetBadgeClass(string type)
+    {
+        switch (type.ToLower())
+        {
+            case "reminder":
+                return "bg-warning text-dark";
+            case "deadline":
+                return "bg-danger";
+            case "absence":
+                return "bg-info text-dark";
+            case "general":
+                return "bg-success";
+            default:
+                return "bg-secondary";
+        }
+    }
+}

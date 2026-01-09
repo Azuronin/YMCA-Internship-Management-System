@@ -1,0 +1,264 @@
+﻿@model IEnumerable<IMS.Models.TasksManage>
+
+@{
+    ViewData["Title"] = "Task Progress Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Admin/taskMng.css" />
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">Task Progress Management</h1>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form id="filterForm" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="assignedToFilter" class="form-label">Intern</label>
+                            <select id="assignedToFilter" class="form-select">
+                                <option value="">All Interns</option>
+                                @foreach (var intern in ViewBag.ApprovedInterns)
+                                {
+                                    <option value="@intern.UserId">@intern.FirstName @intern.LastName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress Summary -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5>Total Tasks</h5>
+                            <h2>@Model.Count()</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h5>Pending</h5>
+                            <h2>@Model.Count(t => t.Status == "Pending")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5>In Progress</h5>
+                            <h2>@Model.Count(t => t.Status == "In Progress")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5>Completed</h5>
+                            <h2>@Model.Count(t => t.Status == "Completed")</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Progress Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="progressTable">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Assigned By</th>
+                                    <th>Due Date</th>
+                                    <th>Priority</th>
+                                    <th class="text-center">Progress Timeline</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in Model)
+                                {
+                                    var isOverdue = task.DueDate < DateTime.Now && task.Status != "Completed";
+                                    var started = task.Status == "In Progress" || task.Status == "Completed";
+                                    var finished = task.Status == "Completed";
+
+                                    <tr data-assignedto="@task.AssignedToId" data-status="@task.Status">
+                                        <td>@task.Title <br /><small class="text-muted"></small></td>
+                                        <td>@task.AssignedTo?.FirstName @task.AssignedTo?.LastName</td>
+                                        
+                                        @if (task.AssignedById == null)
+                                        {
+                                            <td>System Admin</td>
+                                        }
+                                        else if (task.AssignedBy != null)
+                                        {
+                                            <td>
+                                                @task.AssignedBy?.FirstName @task.AssignedBy?.LastName
+                                                <small class="text-muted">(@task.AssignedBy?.Position)</small>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-muted">Unknown</td>
+                                        }
+                                        <td>
+                                            <div>@task.DueDate.ToString("MMM dd, yyyy")</div>
+                                            <small class="@(isOverdue ? "text-danger" : "text-muted")">
+                                                @task.DueDate.ToString("hh:mm tt")
+                                                @if (isOverdue)
+                                                {
+                                                    <span> - Overdue</span>
+                                                }
+                                            </small>
+                                        </td>
+
+                                        <td>
+                                            @if (task.Priority == 1)
+                                            {
+                                                <span class="badge bg-danger">High</span>
+                                            }
+                                            else if (task.Priority == 2)
+                                            {
+                                                <span class="badge bg-warning">Medium</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Low</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!started && task.DueDate < DateTime.Now)
+                                            {
+                                                <!-- Show "Not Available" if overdue and never accepted -->
+                                                <div class="text-center text-danger fw-bold">Not Available</div>
+                                            }
+                                            else
+                                            {
+                                                <!-- Connected-dot timeline (Created → In Progress → Completed) -->
+                                                <div class="progress-timeline">
+                                                    <!-- Created -->
+                                                    <div class="timeline-step active">
+                                                        <div class="timeline-dot">
+                                                            <i class="fas fa-check"></i>
+                                                        </div>
+                                                        <div class="timeline-label">Created</div>
+                                                        <div class="timeline-date">@task.CreatedDate.ToString("MMM dd")</div>
+                                                    </div>
+
+                                                    <!-- Connector -->
+                                                    <div class="timeline-connector @(started ? "active" : "")"></div>
+
+                                                    <!-- In Progress -->
+                                                    <div class="timeline-step @(started ? "active" : "")">
+                                                        <div class="timeline-dot">
+                                                            @if (started)
+                                                            {
+                                                                <i class="fas fa-check"></i>
+                                                            }
+                                                        </div>
+                                                        <div class="timeline-label">In&nbsp;Progress</div>
+                                                        @if (started)
+                                                        {
+                                                            <div class="timeline-date">@((task.AcceptedDate ?? task.CreatedDate).ToString("MMM dd"))</div>
+                                                        }
+                                                    </div>
+
+                                                    <!-- Connector -->
+                                                    <div class="timeline-connector @(finished ? "active" : "")"></div>
+
+                                                    <!-- Completed -->
+                                                    <div class="timeline-step @(finished ? "active" : "")">
+                                                        <div class="timeline-dot">
+                                                            @if (finished)
+                                                            {
+                                                                <i class="fas fa-check"></i>
+                                                            }
+                                                        </div>
+                                                        <div class="timeline-label">Completed</div>
+                                                        @if (finished)
+                                                        {
+                                                            <div class="timeline-date">@task.CompletedDate?.ToString("MMM dd")</div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Filters
+            $('#assignedToFilter, #statusFilter').on('change', function () {
+                var assignedTo = $('#assignedToFilter').val() || "";
+                var status = $('#statusFilter').val() || "";
+
+                $('#progressTable tbody tr').each(function () {
+                    var row = $(this);
+                    var rowAssigned = row.data('assignedto')?.toString() || "";
+                    var rowStatus = row.data('status') || "";
+
+                    var match = true;
+                    if (assignedTo && rowAssigned !== assignedTo) match = false;
+                    if (status && rowStatus !== status) match = false;
+
+                    row.toggle(match);
+                });
+            });
+
+            // Clear Filters
+            $('#clearFilters').on('click', function () {
+                $('#assignedToFilter').val('');
+                $('#statusFilter').val('');
+                $('#progressTable tbody tr').show();
+            });
+        });
+    </script>
+}
+
+@functions {
+    public string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning text-dark",
+            "In Progress" => "bg-info text-white",
+            "Completed" => "bg-success text-white",
+            "Overdue" => "bg-danger text-white",
+            _ => "bg-secondary"
+        };
+    }
+}

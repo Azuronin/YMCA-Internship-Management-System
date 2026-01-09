@@ -1,0 +1,253 @@
+﻿/* ==========================
+   General Heading Styles
+========================== */
+h2, h3 {
+    color: #1f2937;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* ==========================
+   Filter Bar
+========================== */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+    .filter-bar input,
+    .filter-bar select {
+        padding: 10px 14px;
+        font-size: 15px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        outline: none;
+        transition: border-color 0.2s;
+        flex: 1 1 180px;
+    }
+
+        .filter-bar input:focus,
+        .filter-bar select:focus {
+            border-color: #2563eb;
+        }
+
+/* ==========================
+   Table Styles
+========================== */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    font-size: 15px;
+    background-color: white;
+    overflow-x: auto;
+}
+
+    .user-table th,
+    .user-table td {
+        padding: 12px 14px;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+    }
+
+    .user-table th {
+        background-color: #f3f4f6;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .user-table td {
+        color: #374151;
+    }
+
+@media (max-width: 768px) {
+    .user-table,
+    .user-table thead,
+    .user-table tbody,
+    .user-table th,
+    .user-table td,
+    .user-table tr {
+        display: block;
+        width: 100%;
+    }
+
+        .user-table thead {
+            display: none;
+        }
+
+        .user-table tr {
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background-color: #fff;
+            padding: 10px;
+        }
+
+        .user-table td {
+            padding-left: 50%;
+            text-align: right;
+            position: relative;
+            font-size: 14px;
+        }
+
+            .user-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                top: 12px;
+                font-weight: 600;
+                color: #6b7280;
+                white-space: nowrap;
+                text-align: left;
+            }
+}
+
+/* ==========================
+   Icon Buttons
+========================== */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    margin: 0 6px;
+    transition: transform 0.2s, color 0.2s ease;
+}
+
+    .icon-btn:hover {
+        transform: scale(1.2);
+    }
+
+    .icon-btn.view {
+        color: #3b82f6;
+    }
+
+        .icon-btn.view:hover {
+            color: #2563eb;
+        }
+
+    .icon-btn.approve {
+        color: #22c55e;
+    }
+
+        .icon-btn.approve:hover {
+            color: #16a34a;
+        }
+
+    .icon-btn.reject {
+        color: #f97316;
+    }
+
+        .icon-btn.reject:hover {
+            color: #ea580c;
+        }
+
+    .icon-btn.delete {
+        color: #ef4444;
+    }
+
+        .icon-btn.delete:hover {
+            color: #dc2626;
+        }
+
+/* ==========================
+   Modal Styles
+========================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    max-width: 800px;
+    margin: 60px auto;
+    padding: 25px 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+    .modal-content h5 {
+        margin-top: 0;
+        font-size: 18px;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .modal-content .btn-close {
+        font-size: 22px;
+        color: #6b7280;
+    }
+
+.modal-body iframe,
+.modal-body img {
+    max-height: 600px;
+    border: none;
+}
+
+/* ==========================
+   Badge Styles
+========================== */
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+}
+    .badge.approved {
+        background-color: #22c55e !important;
+        color: #fff !important;
+    }
+
+    .badge.pending {
+        background-color: #facc15 !important;
+        color: #000 !important;
+    }
+
+    .badge.rejected {
+        background-color: #ef4444 !important;
+        color: #fff !important;
+    }
+
+/* Highlight new applicants */
+.new-applicant {
+    background-color: #e8f9e8; /* light green background */
+    font-weight: 500;
+}
+
+.badge.bg-success {
+    font-size: 0.75rem;
+    padding: 0.25em 0.5em;
+    border-radius: 8px;
+}
+
+/* ==========================
+   Animations
+========================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

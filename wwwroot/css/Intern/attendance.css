@@ -1,0 +1,26 @@
+﻿.attendance-container h2 {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.attendance-table th, .attendance-table td {
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.attendance-actions .btn {
+    min-width: 120px;
+}
+
+.img-thumbnail {
+    border: 1px solid #ccc;
+    padding: 2px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #ddd;
+}
+
+.modal-footer {
+    border-top: 1px solid #ddd;
+}

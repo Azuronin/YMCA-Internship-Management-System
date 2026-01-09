@@ -1,0 +1,692 @@
+﻿@model IMS.Models.User
+
+@{
+    ViewData["Title"] = "Intern Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    decimal totalRenderedHours = ViewBag.TotalRenderedHours != null ? (decimal)ViewBag.TotalRenderedHours : 0m;
+    bool hasCertificate = ViewBag.HasCertificate != null && (bool)ViewBag.HasCertificate;
+
+    var reports = ViewBag.Reports as List<IMS.Models.InternReport>;
+    var attendances = ViewBag.Attendances as List<IMS.Models.Attendance>;
+    var certificate = ViewBag.Certificate as IMS.Models.Certificate;
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+<div class="container-fluid">
+    <!-- Header with actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Intern Details: @Model.FirstName @Model.LastName</h1>
+        <div>
+            <a asp-action="Interns" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-4 border-start-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted fw-bold mb-1">Total Hours</h6>
+                            <h4 class="mb-0">@totalRenderedHours.ToString("0.00")</h4>
+
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-4 border-start-info h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted fw-bold mb-1">Reports Submitted</h6>
+                            <h4 class="mb-0">@(reports?.Count ?? 0)</h4>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-4 border-start-warning h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted fw-bold mb-1">Completion Status</h6>
+                            <h4 class="mb-0">
+                                @{
+                                    decimal progressPercentage = Model.HoursToRender.HasValue && Model.HoursToRender.Value > 0
+                                    ? (totalRenderedHours / Model.HoursToRender.Value) * 100
+                                    : 0;
+                                    progressPercentage = Math.Min(progressPercentage, 100);
+
+                                }
+                                @Math.Round(progressPercentage, 1)%
+                            </h4>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-4 border-start-@(hasCertificate ? "success" : "secondary") h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted fw-bold mb-1">Certificate</h6>
+                            <h4 class="mb-0">@(hasCertificate ? "Issued" : progressPercentage >= 100 ? "Eligible" : "Not Eligible")</h4>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-certificate fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Personal Info -->
+        <div class="col-lg-4 mb-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i> Personal Information</h5>
+                    <a href="#" class="text-white" data-bs-toggle="modal" data-bs-target="#editInternModal">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="@Model.ProfileImagePath" alt="Profile Image" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Email</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@Model.Email</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Contact Number</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@Model.ContactNumber</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Position</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@Model.Position</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>School</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@(Model.School ?? "Not specified")</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Course</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@(Model.Course ?? "Not specified")</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Status</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="badge bg-@(Model.Status == "Approved" ? "success" : Model.Status == "Pending" ? "warning" : "danger")">
+                                @Model.Status
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Address</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@(Model.Address ?? "Not specified")</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Age</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@Model.Age</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><strong>Gender</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-1">@Model.Gender</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Card -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Hours Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="@(totalRenderedHours >= Model.HoursToRender ? "text-success" : "text-warning")">
+                            @Math.Round(totalRenderedHours, 2).ToString("0.00") hours / @Model.HoursToRender hours
+                        </h3>
+                        <div class="progress mb-3" style="height: 20px;">
+                            @{
+                                progressPercentage = Model.HoursToRender.HasValue && Model.HoursToRender.Value > 0 ?
+                                (totalRenderedHours / Model.HoursToRender.Value) * 100 : 0;
+                                progressPercentage = Math.Min(progressPercentage, 100);
+                            }
+                            <div class="progress-bar @(progressPercentage >= 100 ? "bg-success" : "bg-warning")"
+                                 role="progressbar" style="width: @progressPercentage%;"
+                                 aria-valuenow="@progressPercentage" aria-valuemin="0" aria-valuemax="100">
+                                @Math.Round(progressPercentage, 1)%
+                            </div>
+                        </div>
+                        <p class="mb-2">
+                            <strong>Completion Status:</strong>
+                            @if (progressPercentage >= 100)
+                            {
+                                <span class="badge bg-success">Completed</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">In Progress</span>
+                            }
+                        </p>
+                        <p class="mb-0">
+                            <strong>Certificate Status:</strong>
+                            @if (ViewBag.HasCertificate)
+                            {
+                                <a asp-action="ViewCertificate"
+                                   asp-controller="Admin"
+                                   asp-route-id="@Model.UserId"
+                                   target="_blank"
+                                   class="btn btn-sm btn-success mt-2">
+                                    <i class="fas fa-file-pdf me-1"></i> View Certificate
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Not Eligible Yet</span>
+                            }
+
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Reports and Activities -->
+        <div class="col-lg-8">
+            <!-- Reports Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i> Submitted Reports</h5>
+                </div>
+                <div class="card-body">
+                    @if (reports == null || !reports.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt display-4 text-muted mb-3"></i>
+                            <p class="text-muted">No reports submitted yet</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="reportsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Content Preview</th>
+                                        <th>Date Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var report in reports)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">@report.Task?.Title</div>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(report.Content))
+                                                {
+                                                    if (report.Content.Length > 30)
+                                                    {
+                                                        <span data-bs-toggle="tooltip" title="@report.Content">
+                                                            @report.Content.Substring(0, 30)...
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @report.Content
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">No content</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span>@report.DateSubmitted.ToString("MMM dd, yyyy hh:mm tt")</span><br>
+                                                @if (report.Task?.Status == "Completed")
+                                                {
+                                                    <small class="badge bg-success mt-1">Completed</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#viewReportModal-@report.ReportId">
+                                                        <i class="fas fa-eye me-1"></i> 
+                                                    </button>
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+            @foreach (var report in reports)
+            {
+                <!-- Reuse modal from MyReports -->
+                <div class="modal fade" id="viewReportModal-@report.ReportId" tabindex="-1" aria-labelledby="viewReportModalLabel-@report.ReportId" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="viewReportModalLabel-@report.ReportId">Report Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <!-- Left column -->
+                                    <div class="col-md-6">
+                                        <h5 class="fw-bold">@report.Task?.Title</h5>
+                                        <p><strong>Report Type:</strong> @report.ReportType</p>
+                                        <p><strong>Submitted:</strong> @report.DateSubmitted.ToString("MMM dd, yyyy hh:mm tt")</p>
+
+                                        <div class="mt-4">
+                                            <h6>Report Content:</h6>
+                                            <div class="border p-3 bg-light rounded" style="white-space: pre-line;">
+                                                @report.Content
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right column -->
+                                    <div class="col-md-6">
+                                        <h6>Proof File:</h6>
+                                        @if (!string.IsNullOrEmpty(report.FilePath))
+                                        {
+                                            <div class="text-center">
+                                                <a href="@Url.Content(report.FilePath)" target="_blank">
+                                                    <img src="@Url.Content(report.FilePath)"
+                                                         class="img-fluid rounded mb-2"
+                                                         alt="Proof file"
+                                                         style="max-height:200px; object-fit:cover;"
+                                                         title="Click to view full image in new tab" />
+                                                </a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-file-alt display-4"></i>
+                                                <p class="mt-2">No proof file available</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Attendance Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i> Recent Attendance</h5>
+                </div>
+                <div class="card-body">
+                    @if (attendances == null || !attendances.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar display-4 text-muted mb-3"></i>
+                            <p class="text-muted">No attendance records found</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time In</th>
+                                        <th>Time Out</th>
+                                        <th>Hours Rendered</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var attendance in attendances.Take(10).Where(a => !a.IsDeleted))
+                                    {
+                                        <tr>
+                                            <td>@attendance.Date.ToString("MMM dd, yyyy")</td>
+                                            <td>@(attendance.TimeIn.HasValue ? attendance.TimeIn.Value.ToString("hh:mm tt") : "N/A")</td>
+                                            <td>@(attendance.TimeOut.HasValue ? attendance.TimeOut.Value.ToString("hh:mm tt") : "N/A")</td>
+                                            <td>@(attendance.RenderedHours.HasValue ? Math.Round(attendance.RenderedHours.Value, 2).ToString("0.00") : "0.00") hrs</td>
+                                            <td>
+                                                @if (attendance.ApprovalStatus == "Approved")
+                                                {
+                                                    <span class="badge bg-success">Approved</span>
+                                                }
+                                                else if (attendance.ApprovalStatus == "Rejected")
+                                                {
+                                                    <span class="badge bg-warning text-dark">Rejected</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">@attendance.ApprovalStatus</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (attendances.Count > 5)
+                        {
+                            <div class="text-center mt-2">
+                                <a href="@Url.Action("AttendanceRecords", new { id = Model.UserId })" class="btn btn-sm btn-outline-primary">View All Attendance</a>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Detail Modal -->
+<div class="modal fade" id="reportDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="reportDetailContent">
+                <!-- Content will be loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Edit Intern Modal -->
+<div class="modal fade" id="editInternModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Intern Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="EditIntern" asp-route-id="@Model.UserId" method="post">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" name="FirstName" value="@Model.FirstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" name="LastName" value="@Model.LastName" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="Email" value="@Model.Email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Contact Number</label>
+                                <input type="text" class="form-control" name="ContactNumber" value="@Model.ContactNumber" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">School</label>
+                                <input type="text" class="form-control" name="School" value="@Model.School">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Course</label>
+                                <input type="text" class="form-control" name="Course" value="@Model.Course">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Hours to Render</label>
+                                <input type="number" class="form-control" name="HoursToRender" value="@Model.HoursToRender" max="2000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Total Rendered Hours</label>
+                                <input type="number" class="form-control" name="TotalRenderedHours" value="@Model.TotalRenderedHours" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="Status">
+                                    <option value="Approved" selected="@(Model.Status == "Approved")">Approved</option>
+                                    <option value="Pending" selected="@(Model.Status == "Pending")">Pending</option>
+                                    <option value="Disapproved" selected="@(Model.Status == "Disapproved")">Disapproved</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="Address" rows="2">@Model.Address</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+
+        $(document).ready(function() {
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // View report details
+            $('.view-report').click(function() {
+                var reportId = $(this).data('report-id');
+
+                $('#reportDetailContent').html(`
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading report details...</p>
+                    </div>
+                `);
+
+                $('#reportDetailModal').modal('show');
+
+                // Fetch report details via AJAX
+                $.get('@Url.Action("GetReportDetails", "Admin")', { id: reportId })
+                    .done(function(data) {
+                        if (data.success) {
+                            $('#reportDetailContent').html(`
+                                <h6>${data.taskTitle}</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Category</label>
+                                    <p class="form-control-static">${data.taskCategory}</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Content</label>
+                                    <div class="border p-3 bg-light">
+                                        ${data.content}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Date Submitted</label>
+                                    <p class="form-control-static">${new Date(data.dateSubmitted).toLocaleString()}</p>
+                                </div>
+                                ${data.filePath ? `
+                                <div class="mb-3">
+                                    <label class="form-label">Attachment</label>
+                                    <p class="form-control-static">
+                                        <a href="${data.filePath}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i> View Attachment
+                                        </a>
+                                    </p>
+                                </div>
+                                ` : ''}
+                            `);
+                        } else {
+                            $('#reportDetailContent').html(`
+                                <div class="alert alert-danger">
+                                    Failed to load report details. Please try again.
+                                </div>
+                            `);
+                        }
+                    })
+                    .fail(function() {
+                        $('#reportDetailContent').html(`
+                            <div class="alert alert-danger">
+                                Failed to load report details. Please try again.
+                            </div>
+                        `);
+                    });
+            });
+
+            // Export reports to CSV
+            $('#exportReportsBtn').click(function() {
+                // Get table data
+                var table = document.getElementById('reportsTable');
+                if (!table) return;
+
+                var csv = [];
+
+                // Add headers
+                var headers = [];
+                for (var i = 0; i < table.rows[0].cells.length - 1; i++) { // Skip actions column
+                    headers.push(table.rows[0].cells[i].textContent.trim());
+                }
+                csv.push(headers.join(','));
+
+                // Add rows
+                for (var i = 1; i < table.rows.length; i++) {
+                    var row = [];
+                    for (var j = 0; j < table.rows[i].cells.length - 1; j++) { // Skip actions column
+                        row.push('"' + table.rows[i].cells[j].textContent.trim().replace(/"/g, '""') + '"');
+                    }
+                    csv.push(row.join(','));
+                }
+
+                // Create download link
+                var csvString = csv.join('\n');
+                var a = document.createElement('a');
+                a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvString);
+                a.target = '_blank';
+                a.download = '@Model.FirstName@Model.LastName-Reports.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        });
+    </script>
+}

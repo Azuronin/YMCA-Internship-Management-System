@@ -1,0 +1,124 @@
+﻿@model List<IMS.Models.User>
+@{
+    Layout = null; // We'll define our full layout here
+    ViewData["Title"] = "Administrator";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+
+</head>
+<body>
+    <!-- Sidebar -->
+
+    <div class="sidebar" id="sidebar">
+        <div class="toggle-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <ul>
+            <li><a asp-controller="Account" asp-action=""><i class="fas fa-id-card"></i><span>Account</span></a></li>
+            <li><a asp-controller="Dashboard" asp-action=""><i class="fas fa-chart-pie"></i><span>Dashboard</span></a></li>
+            <li><a asp-controller="Attendance" asp-action=""><i class="fas fa-calendar-check"></i><span>Attendance</span></a></li>
+            <li><a asp-controller="Admin" asp-action="Documents"><i class="fas fa-file-alt"></i><span>Application</span></a></li>
+            <li><a asp-controller="Sup/Train" asp-action=""><i class="fas fa-user-tie"></i><span>Supervisor/Trainer Management</span></a></li>
+            <li><a asp-controller="Intern" asp-action=""><i class="fas fa-user-graduate"></i><span>Intern Management</span></a></li>
+            <li><a asp-controller="Task" asp-action=""><i class="fas fa-tasks"></i><span>Task Management</span></a></li>
+            <li><a asp-controller="TaskProgress" asp-action=""><i class="fas fa-spinner"></i><span>Task Progress</span></a></li>
+            <li><a asp-controller="Reports" asp-action=""><i class="fas fa-chart-line"></i><span>Reports</span></a></li>
+            <li><a asp-controller="Evaluation" asp-action=""><i class="fas fa-star-half-alt"></i><span>Evaluation</span></a></li>
+            <li><a asp-controller="Notification" asp-action=""><i class="fas fa-bell"></i><span>Notification</span></a></li>
+            <li><a asp-controller="Account" asp-action="Login"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+        </ul>
+    </div>
+    @{
+        string successMsg = Context.Request.Query["msg"];
+    }
+
+    @if (!string.IsNullOrEmpty(successMsg))
+    {
+        <div class="modal-message" id="loginSuccessModal">
+            <div class="modal-content">
+                <p>@successMsg</p>
+                <button onclick="document.getElementById('loginSuccessModal').remove()">OK</button>
+            </div>
+        </div>
+    }
+    <!-- Main content -->
+    <div class="main-content">
+        <h2 class="text-primary">User Account List</h2>
+
+
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Email</th>
+                    <th>Full Name</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th style="width: 140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Email</td>
+                        <td>@user.FirstName @user.MiddleName @user.LastName</td>
+                        <td>@user.Position</td>
+                        <td>
+                            @if (user.Status == "Approved")
+                            {
+                                <span class="badge bg-success text-white">@user.Status</span>
+                            }
+                            else if (user.Status == "Disapproved")
+                            {
+                                <span class="badge bg-danger text-white">@user.Status</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">@user.Status</span>
+                            }
+                        </td>
+                        <td>
+                            <form asp-action="Approve" method="post" style="display:inline;">
+                                <input type="hidden" name="id" value="@user.UserId" />
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Approve"
+                                @(user.Status == "Approved" ? "disabled" : "")>
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            <form asp-action="Disapprove" method="post" style="display:inline;">
+                                <input type="hidden" name="id" value="@user.UserId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Disapprove"
+                                @(user.Status == "Disapproved" ? "disabled" : "")>
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </form>
+                            <form asp-action="Delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure to delete this user?');">
+                                <input type="hidden" name="id" value="@user.UserId" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById("sidebar");
+            sidebar.classList.toggle("expanded");
+        }
+    </script>
+</body>
+</html>

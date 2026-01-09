@@ -1,0 +1,525 @@
+﻿@model IEnumerable<IMS.Models.TasksManage>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Intern Dashboard";
+    var msg = Context.Request.Query["msg"].ToString();
+
+    // ✅ Upcoming tasks (Pending or In Progress, and not past due)
+    var upcomingTasks = Model
+        .Where(t => (t.Status == "Pending" || t.Status == "In Progress") &&
+                    t.DueDate >= DateTime.Now)
+        .OrderBy(t => t.DueDate)
+        .Take(5)
+        .ToList();
+
+    // ✅ Task stats
+    var completedCount = Model.Count(t => t.Status == "Completed");
+    var totalTasks = Model.Count();
+    var overallProgress = totalTasks > 0
+        ? (int)Math.Round((double)completedCount / totalTasks * 100)
+        : 0;
+}
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Intern Dashboard</h2>
+            <p class="text-muted mb-0">Welcome back! Here's your progress overview</p>
+        </div>
+        <div class="d-flex">
+            <span class="badge bg-light text-dark me-2 p-2 d-flex align-items-center">
+                <i class="fas fa-calendar-alt me-2"></i> @DateTime.Now.ToString("MMM dd, yyyy")
+            </span>
+            <span class="badge bg-light text-dark p-2 d-flex align-items-center">
+                <i class="fas fa-clock me-2"></i> <span id="current-time">@DateTime.Now.ToString("h:mm tt")</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-stat-card bg-white border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-1">Total Tasks</h6>
+                            <h3 class="fw-bold mb-0 text-primary">@totalTasks</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-light-primary rounded-circle p-3">
+                                <i class="fas fa-tasks text-primary fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-stat-card bg-white border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-1">Completed</h6>
+                            <h3 class="fw-bold mb-0 text-success">@completedCount</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-light-success rounded-circle p-3">
+                                <i class="fas fa-check-circle text-success fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-stat-card bg-white border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-1">Hours Completed</h6>
+                            <h3 class="fw-bold mb-0 text-info">
+                                @String.Format("{0:0.##}", ViewBag.HoursCompleted) / @ViewBag.TotalHours
+                            </h3>
+                            <small class="text-muted">(@ViewBag.HoursProgress%)</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-light-info rounded-circle p-3">
+                                <i class="fas fa-clock text-info fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-stat-card bg-white border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-1">Pending Tasks</h6>
+                            <h3 class="fw-bold mb-0 text-danger">@Model.Count(t => t.Status != "Completed" && t.Status != "In Progress")</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-light-danger rounded-circle p-3">
+                                <i class="fas fa-exclamation-triangle text-danger fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row g-4">
+        <!-- Left Column: Tasks and Progress -->
+        <div class="col-xl-8">
+            <!-- Progress Overview -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 pb-3">
+                    <h5 class="card-title mb-1 fw-semibold">Progress Overview</h5>
+                    <p class="text-muted mb-0">Your task and hours completion progress</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="mb-3">Task Completion</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="flex-grow-1 me-4">
+                                    <div class="progress rounded-pill" style="height: 16px;">
+                                        <div class="progress-bar
+                                            @(overallProgress >= 75 ? "bg-success" :
+                                              overallProgress >= 50 ? "bg-primary" :
+                                              overallProgress >= 25 ? "bg-warning" : "bg-danger")"
+                                             role="progressbar" style="width: @overallProgress%;"
+                                             aria-valuenow="@overallProgress" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <span class="fw-bold
+                                        @(overallProgress >= 75 ? "text-success" :
+                                          overallProgress >= 50 ? "text-primary" :
+                                          overallProgress >= 25 ? "text-warning" : "text-danger")">
+                                        @overallProgress%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>@completedCount of @totalTasks tasks</span>
+                                <span>Completed</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <h6 class="mb-3">Hours Completion</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="flex-grow-1 me-4">
+                                    <div class="progress rounded-pill" style="height: 16px;">
+                                        <div class="progress-bar bg-info"
+                                             role="progressbar"
+                                             style="width: @ViewBag.HoursProgress%;"
+                                             aria-valuenow="@ViewBag.HoursProgress"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <span class="fw-bold text-info">
+                                        @ViewBag.HoursProgress%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>@ViewBag.HoursCompleted of @ViewBag.TotalHours hours</span>
+                                <span>Completed</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row text-center mt-4">
+                        <div class="col-4">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-0 fw-bold text-primary">@Model.Count(t => t.Status == "In Progress")</h6>
+                                <small class="text-muted">In Progress</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-0 fw-bold text-warning">@Model.Count(t => t.Status == "Pending")</h6>
+                                <small class="text-muted">Pending Review</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-0 fw-bold text-danger">@Model.Count(t => t.DueDate < DateTime.Now && t.Status != "Completed")</h6>
+                                <small class="text-muted">Overdue</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Tasks Table -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent border-0 pt-4 pb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1 fw-semibold">Completed Tasks</h5>
+                        <p class="text-muted mb-0">All tasks you have completed</p>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive rounded">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Task</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Date Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Any(t => t.Status == "Completed"))
+                                {
+                                    @foreach (var task in Model.Where(t => t.Status == "Completed").Take(5))
+                                    {
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="fw-semibold">@task.Title</div>
+                                                <small class="text-muted text-truncate" style="max-width: 200px; display: block;">
+                                                    @task.Description
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="far fa-calendar-alt me-2 text-muted"></i>
+                                                    @task.DueDate.ToString("MMM dd, yyyy")
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill px-3 py-2 bg-success">
+                                                    Completed
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (task.CompletedDate.HasValue)
+                                                {
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="far fa-check-circle me-2 text-muted"></i>
+                                                        @task.CompletedDate.Value.ToString("MMM dd, yyyy")
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-5">
+                                            <i class="fas fa-check-circle fa-3x mb-3 text-light"></i>
+                                            <p class="mb-0 fs-5">No completed tasks yet</p>
+                                            <p class="text-muted">Once you complete tasks, they’ll appear here</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Announcements and Upcoming Deadlines -->
+        <div class="col-xl-4">
+            <!-- Upcoming Deadlines Card -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 pb-3">
+                    <h5 class="card-title mb-1 fw-semibold">Upcoming Deadlines</h5>
+                    <p class="text-muted mb-0">Tasks needing your attention</p>
+                </div>
+                <div class="card-body">
+                    @if (upcomingTasks.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var task in upcomingTasks)
+                            {
+                                <div class="list-group-item border-0 px-0 mb-3 rounded">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <div class="avatar-sm bg-light-warning rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-hourglass-half text-warning"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-semibold">
+                                                @task.Title <small class="badge rounded-pill mt-1
+                            @(task.Status == "Pending" ? "bg-warning text-dark" : "bg-info text-white")">
+                                                    @task.Status
+                                                </small>
+                                            </h6>
+                                            <div class="d-flex align-items-center">
+                                                <i class="far fa-clock text-muted me-2 small"></i>
+                                                <small class="text-muted">Due: @task.DueDate.ToString("MMM dd, h:mm tt")</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/Intern/MyTasks" class="btn btn-sm btn-outline-primary">View All Tasks</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-3 text-light"></i>
+                            <p class="mb-0">No upcoming deadlines</p>
+                            <p class="text-muted small">Great job staying on top of your tasks!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Recent Announcements Card -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 pb-3">
+                    <h5 class="card-title mb-1 fw-semibold">Recent Announcements</h5>
+                    <p class="text-muted mb-0">Stay updated with the latest notices</p>
+                </div>
+                <div class="card-body">
+                    @if (ViewData["Announcements"] is List<IMS.Models.Announcements> announcements && announcements.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var ann in announcements)
+                            {
+                                <a href="javascript:void(0);"
+                                   class="list-group-item list-group-item-action border-0 px-0 mb-3 rounded shadow-sm"
+                                   data-bs-toggle="modal" data-bs-target="#announcementModal-@ann.AnnouncementId">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-shrink-0">
+                                            <div class="avatar-sm rounded-circle me-3 d-flex align-items-center justify-content-center
+                                    @(ann.Type == "Deadline" ? "bg-light-danger" :
+                                      ann.Type == "Absence" ? "bg-light-warning" :
+                                      ann.Type == "Reminder" ? "bg-light-info" : "bg-light-secondary")">
+                                                <i class="@(ann.Type == "Deadline" ? "fas fa-exclamation-circle text-danger" :
+                                                ann.Type == "Absence" ? "fas fa-user-times text-warning" :
+                                                ann.Type == "Reminder" ? "fas fa-bell text-info" : "fas fa-bullhorn text-secondary")"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-semibold">@ann.Title</h6>
+                                            <p class="text-muted small mb-1 text-truncate" style="max-width: 300px;">@ann.Message</p>
+                                            <small class="text-muted">
+                                                <i class="far fa-calendar-alt me-1"></i>
+                                                @ann.DatePosted.ToString("MMM dd, yyyy h:mm tt")
+                                            </small>
+                                        </div>
+                                    </div>
+                                </a>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="announcementModal-@ann.AnnouncementId" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">@ann.Title</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="mb-3" style="white-space: pre-line;">@ann.Message</p>
+                                                <div class="d-flex justify-content-between text-muted small">
+                                                    <span><i class="fas fa-tag me-1"></i><strong>@ann.Type</strong></span>
+                                                    <span><i class="far fa-calendar-alt me-1"></i>@ann.DatePosted.ToString("MMM dd, yyyy h:mm tt")</span>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-0">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-bullhorn fa-2x mb-3 text-light"></i>
+                            <p class="mb-0">No announcements yet</p>
+                            <p class="text-muted small">Stay tuned for updates from your supervisor</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Inline Styles -->
+<style>
+    :root {
+        --light-primary: rgba(13,110,253,0.15);
+        --light-success: rgba(25,135,84,0.15);
+        --light-warning: rgba(255,193,7,0.15);
+        --light-danger: rgba(220,53,69,0.15);
+        --light-info: rgba(13,202,240,0.15);
+    }
+
+    .dashboard-stat-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+        .dashboard-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
+        }
+
+    .bg-light-primary {
+        background-color: var(--light-primary) !important;
+    }
+
+    .bg-light-success {
+        background-color: var(--light-success) !important;
+    }
+
+    .bg-light-warning {
+        background-color: var(--light-warning) !important;
+    }
+
+    .bg-light-danger {
+        background-color: var(--light-danger) !important;
+    }
+
+    .bg-light-info {
+        background-color: var(--light-info) !important;
+    }
+
+    .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+    }
+
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        color: #6c757d;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .table td {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        vertical-align: middle;
+    }
+
+    .badge {
+        font-weight: 500;
+    }
+
+    .fw-semibold {
+        font-weight: 600;
+    }
+</style>
+
+<!-- Inline Script -->
+<script>
+    // Update current time
+    function updateTime() {
+        const now = new Date();
+        const timeEl = document.getElementById('current-time');
+        if (timeEl) {
+            timeEl.textContent = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+    }
+
+    setInterval(updateTime, 60000);
+    updateTime();
+</script>

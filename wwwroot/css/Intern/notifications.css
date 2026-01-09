@@ -1,0 +1,172 @@
+﻿
+/* Enhanced Styling */
+.icon-circle {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.notification-item {
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+
+.unread-notification {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.03) 0%, rgba(13, 110, 253, 0.08) 100%);
+    border-left: 4px solid #0d6efd;
+}
+
+.deleted-notification {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.03) 0%, rgba(220, 53, 69, 0.08) 100%);
+    border-left: 4px solid #dc3545;
+    opacity: 0.8;
+}
+
+.unread-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #dc3545;
+    border: 2px solid white;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.notification-icon {
+    position: relative;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-item:hover .notification-actions {
+    opacity: 1;
+}
+
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.form-select:focus,
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    border-color: #0d6efd;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border: none;
+}
+
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.empty-state .icon-circle {
+    background: #f8f9fa !important;
+}
+
+.toast {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Search highlight */
+.search-highlight {
+    background-color: yellow !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Fade animation for filtered items */
+.notification-item.fade-out {
+    opacity: 0.3;
+    transform: scale(0.98);
+}
+
+.notification-item.fade-in {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Loading states */
+.btn.loading {
+    pointer-events: none;
+}
+
+    .btn.loading i {
+        animation: spin 1s linear infinite;
+    }
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .notification-actions {
+        opacity: 1;
+    }
+}

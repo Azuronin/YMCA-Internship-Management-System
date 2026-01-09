@@ -1,0 +1,247 @@
+﻿@model IMS.Models.User
+@{
+    Layout = "~/Views/Shared/_MinimalLayout.cshtml";
+    ViewData["Title"] = "Register";
+    string msg = Context.Request.Query["msg"];
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="~/css/Account/register.css" asp-append-version="true" />
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>alert("@msg");</script>
+}
+
+<div class="register-wrapper">
+    <div class="register-overlay">
+        <div class="register-header">
+            <img src="~/images/logo.png" alt="YMCA Logo" class="logo" />
+            <div class="title-text">
+                <h1>Internship Management</h1>
+                <h1>System of YMCA Cebu</h1>
+                <h1>Philippines</h1>
+            </div>
+        </div>
+        <div class="form-container">
+            <div class="form-header">
+                <i class="fas fa-user-plus header-icon"></i>
+                <h2>Create Your Account</h2>
+                <p>Join the YMCA Internship Management System</p>
+            </div>
+            <form asp-action="Register" method="post" id="registerForm">
+                @Html.AntiForgeryToken()
+
+                <div class="form-row">
+                    <!-- Email -->
+                    <div class="form-group full-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope icon"></i>    
+                            <input asp-for="Email" placeholder="Email Address" type="email" />
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <!-- First Name -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-user icon"></i>
+                            <input asp-for="FirstName" placeholder="First Name" id="firstName"
+                                   oninput="validateName(this)" />
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="FirstName" class="text-danger"></span>
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-user icon"></i>
+                            <input asp-for="LastName" placeholder="Last Name" id="lastName"
+                                   oninput="validateName(this)" />
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="LastName" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <!-- School -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-university icon"></i>
+                            <input asp-for="School" placeholder="School/University" required />
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="School" class="text-danger"></span>
+                    </div>
+                    <!-- Course/Program Dropdown -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-graduation-cap icon"></i>
+
+                            <input list="courseList" asp-for="Course" id="courseInput"
+                                   placeholder="Course/Program"
+                                   oninput="validateCourse(this)" maxlength="10" required/>
+
+                            <datalist id="courseList">
+                                @* Load existing courses dynamically from DB *@
+                                <option value="BSIT"></option>
+                                <option value="BSBA"></option>
+                                <option value="BSED"></option>
+                                <option value="BEED"></option>
+                                <option value="BSCS"></option>
+                                <option value="BSHM"></option>
+                            </datalist>
+
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="Course" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <small class="field-hint">
+                    Once submitted, this field cannot be changed. Please ensure the required hours are correct.
+                </small>
+                <div class="form-row">
+                    <!-- Hours to Render -->
+                    <div class="form-group full-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-clock icon"></i>
+                            <input asp-for="HoursToRender" placeholder="Required Internship Hours" type="number" min="1" max="2000" required/>
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="HoursToRender" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <!-- Password -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock icon"></i>
+                            <input asp-for="Password" type="password" id="password" placeholder="Password"/>
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('password', this)"></i>
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group half-width">
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock icon"></i>
+                            <input asp-for="ConfirmPassword" type="password" id="confirmPassword" placeholder="Confirm Password" />
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('confirmPassword', this)"></i>
+                            <div class="input-line"></div>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="security-section">
+                    <div class="security-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Security Questions</span>
+                        <small>This will serve as your password recovery</small>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Secret Question -->
+                        <div class="form-group full-width">
+                            <div class="input-wrapper">
+                                <i class="fas fa-question-circle icon"></i>
+                                <select asp-for="SecretQuestion" class="secret-question-select">
+                                    <option value="">Select a Secret Question</option>
+                                    <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                                    <option value="What was the name of your first school?">What was the name of your first school?</option>
+                                    <option value="What city were you born in?">What city were you born in?</option>
+                                    <option value="What is your favorite childhood memory?">What is your favorite childhood memory?</option>
+                                    <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                                </select>
+                                <div class="input-line"></div>
+                            </div>
+                            <span asp-validation-for="SecretQuestion" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Secret Answer -->
+                        <div class="form-group full-width">
+                            <div class="input-wrapper">
+                                <i class="fas fa-key icon"></i>
+                                <input asp-for="SecretAnswer" placeholder="Your Answer" />
+                                <div class="input-line"></div>
+                            </div>
+                            <span asp-validation-for="SecretAnswer" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+
+                <div class="form-footer">
+                    <div class="footer-link">
+                        Already have an account?
+                        <a asp-action="Login" asp-controller="Account">
+                            <i class="fas fa-sign-in-alt"></i> Login here
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        // ✅ Name validation: no numbers, capitalize first letter
+        function validateName(input) {
+            // Remove numbers
+            input.value = input.value.replace(/[0-9]/g, '');
+            // Capitalize first letter, lowercase rest
+            if (input.value.length > 0) {
+                input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+            }
+        }
+        // ✅ Validate course: only uppercase letters, max 10 chars
+        function validateCourse(input) {
+            let value = input.value.toUpperCase(); // force uppercase
+            value = value.replace(/[^A-Z]/g, '');  // only A–Z letters
+            value = value.substring(0, 10);        // max 10 chars
+            input.value = value;
+        }
+        // ✅ Force Course/Program input to UPPERCASE & max 10 letters only
+        function handleCourseChange() {
+            const courseDropdown = document.getElementById("courseDropdown");
+            let value = courseDropdown.value;
+
+            // Convert to uppercase
+            value = value.toUpperCase();
+
+            // Restrict to letters only & max 10 chars
+            value = value.replace(/[^A-Z]/g, '').substring(0, 10);
+
+            // Update dropdown
+            courseDropdown.value = value;
+        }
+        function togglePassword(fieldId, icon) {
+            const field = document.getElementById(fieldId);
+            if (field.type === "password") {
+                field.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                field.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+    </script>
+}

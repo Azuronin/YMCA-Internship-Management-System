@@ -1,0 +1,558 @@
+﻿@model IEnumerable<IMS.Models.TasksManage>
+
+@{
+    ViewData["Title"] = "Task Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+<link rel="stylesheet" href="~/css/Admin/taskMng.css" />
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">Task Management</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                    <i class="fas fa-plus"></i> Create New Task
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(msg))
+            {
+                <script>
+                    alert("@msg");
+                </script>
+            }
+
+            <!-- Filter Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form id="filterForm" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="priorityFilter" class="form-label">Priority</label>
+                            <select id="priorityFilter" class="form-select">
+                                <option value="">All Priorities</option>
+                                <option value="1">High</option>
+                                <option value="2">Medium</option>
+                                <option value="3">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="assignedToFilter" class="form-label">Assigned To</label>
+                            <select id="assignedToFilter" class="form-select">
+                                <option value="">All Interns</option>
+                                @foreach (var intern in ViewBag.ApprovedInterns)
+                                {
+                                    <option value="@intern.UserId">@intern.FirstName @intern.LastName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tasks Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Tasks</h5>
+                            <h2 class="card-text">@Model.Count()</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h5 class="card-title">Pending</h5>
+                            <h2 class="card-text">@Model.Count(t => t.Status == "Pending")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">In Progress</h5>
+                            <h2 class="card-text">@Model.Count(t => t.Status == "In Progress")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Completed</h5>
+                            <h2 class="card-text">@Model.Count(t => t.Status == "Completed")</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tasksTable">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Assigned By</th>
+                                    <th>Due Date</th>
+                                    <th>Priorities</th>
+                                    <th class="text-center">Progress Timeline</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in Model)
+                                {
+                                    var isOverdue = task.DueDate < DateTime.Now && task.Status != "Completed";
+                                    var started = task.Status == "In Progress" || task.Status == "Completed";
+                                    var finished = task.Status == "Completed";
+                                    <tr data-task-id="@task.TaskId"
+                                    data-priority="@task.Priority"
+                                    data-assignedto="@task.AssignedToId"
+                                    class="@(isOverdue)">
+
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(task.ImagePath))
+                                                {
+                                                    <img src="@task.ImagePath" alt="Task image" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@task.Title</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@task.AssignedTo?.FirstName @task.AssignedTo?.LastName</td>
+                                        <td>
+                                            @if (task.AssignedById == null)
+                                            {
+                                                <span>System Admin</span>
+                                            }
+                                            else if (task.AssignedBy != null)
+                                            {
+                                                <span>@task.AssignedBy.FirstName @task.AssignedBy.LastName <small class="text-muted">(@task.AssignedBy.Position)</small> </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Unknown</span>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            <div>@task.DueDate.ToString("MMM dd, yyyy")</div>
+                                            <small class="@(isOverdue ? "text-danger" : "text-muted")">
+                                                @task.DueDate.ToString("hh:mm tt")
+                                                @if (isOverdue)
+                                                {
+                                                    <span> - Overdue</span>
+                                                }
+                                            </small>
+                                        </td>
+                                        <td>
+                                            @if (task.Priority == 1)
+                                            {
+                                                <span class="badge bg-danger">High</span>
+                                            }
+                                            else if (task.Priority == 2)
+                                            {
+                                                <span class="badge bg-warning">Medium</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Low</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!started && task.DueDate < DateTime.Now && task.Status != "In Progress" && task.Status != "Completed")
+                                            {
+                                                <!-- Show "Not Available" if overdue and never accepted -->
+                                                <div class="text-center text-danger fw-bold">Not Available <small class="text-danger ">(Overdue)</small></div>
+                                            }
+                                            else
+                                            {
+                                                <!-- Connected-dot timeline (Created → In Progress → Completed) -->
+                                                <div class="progress-timeline">
+                                                    <!-- Created -->
+                                                    <div class="timeline-step active">
+                                                        <div class="timeline-dot">
+                                                            <i class="fas fa-check"></i>
+                                                        </div>
+                                                        <div class="timeline-label">Created</div>
+                                                        <div class="timeline-date">@task.CreatedDate.ToString("MMM dd")</div>
+                                                    </div>
+
+                                                    <!-- Connector -->
+                                                    <div class="timeline-connector @(started ? "active" : "")"></div>
+
+                                                    <!-- In Progress -->
+                                                    <div class="timeline-step @(started ? "active" : "")">
+                                                        <div class="timeline-dot">
+                                                            @if (started)
+                                                            {
+                                                                <i class="fas fa-check"></i>
+                                                            }
+                                                        </div>
+                                                        <div class="timeline-label">In&nbsp;Progress</div>
+                                                        @if (started)
+                                                        {
+                                                            <div class="timeline-date">@((task.AcceptedDate ?? task.CreatedDate).ToString("MMM dd"))</div>
+                                                        }
+                                                    </div>
+
+                                                    <!-- Connector -->
+                                                    <div class="timeline-connector @(finished ? "active" : "")"></div>
+
+                                                    <!-- Completed -->
+                                                    <div class="timeline-step @(finished ? "active" : "")">
+                                                        <div class="timeline-dot">
+                                                            @if (finished)
+                                                            {
+                                                                <i class="fas fa-check"></i>
+                                                            }
+                                                        </div>
+                                                        <div class="timeline-label">Completed</div>
+                                                        @if (finished)
+                                                        {
+                                                            <div class="timeline-date">@task.CompletedDate?.ToString("MMM dd")</div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if(finished == true)
+                                            {
+                                                <!-- View button -->
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewTaskModal-@task.TaskId">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <div class="btn-group">
+                                                    <!-- View button -->
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewTaskModal-@task.TaskId">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+
+                                                    <!-- Edit button -->
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTaskModal-@task.TaskId">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+
+                                                    <form asp-controller="Admin" asp-action="DeleteTask" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@task.TaskId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this task?');">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            }
+                                            
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Per-task modals (View + Edit) rendered after the table for valid HTML structure -->
+            @foreach (var taskModal in Model)
+            {
+                <!-- View Task Modal -->
+                <div class="modal fade" id="viewTaskModal-@taskModal.TaskId" tabindex="-1" aria-labelledby="viewTaskModalLabel-@taskModal.TaskId" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="viewTaskModalLabel-@taskModal.TaskId">Task Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h5 class="fw-bold">@taskModal.Title</h5>
+                                        <p>@taskModal.Description</p>
+                                        <p><strong>Assigned To:</strong> @taskModal.AssignedTo?.FirstName @taskModal.AssignedTo?.LastName</p>
+                                        <p>
+                                            <strong>Assigned By:</strong>
+                                            @if (taskModal.AssignedBy != null)
+                                            {
+                                                <span>@taskModal.AssignedBy.FirstName @taskModal.AssignedBy.LastName (@taskModal.AssignedBy.Position)</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Admin</span>
+                                            }
+                                        </p>
+                                        <p><strong>Due Date:</strong> @taskModal.DueDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p>
+                                            <strong>Priority:</strong>
+                                            @if (taskModal.Priority == 1)
+                                            {
+                                                <span class="badge bg-danger">High</span>
+                                            }
+                                            else if (taskModal.Priority == 2)
+                                            {
+                                                <span class="badge bg-warning">Medium</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Low</span>
+                                            }
+                                        </p>
+                                        @if (!string.IsNullOrEmpty(taskModal.ProgressNotes))
+                                        {
+                                            <p><strong>Progress Notes:</strong> @taskModal.ProgressNotes</p>
+                                        }
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        @if (!string.IsNullOrEmpty(taskModal.ImagePath))
+                                        {
+                                            <img src="@taskModal.ImagePath" class="img-fluid rounded mb-2" alt="Task image" style="max-height:200px; object-fit:cover;">
+                                        }
+                                        <p class="text-muted">Created: @taskModal.CreatedDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        @if (taskModal.AcceptedDate.HasValue)
+                                        {
+                                            <p class="text-info">Started: @taskModal.AcceptedDate.Value.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        }
+                                        @if (taskModal.CompletedDate.HasValue)
+                                        {
+                                            <p class="text-success">Completed: @taskModal.CompletedDate.Value.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Task Modal -->
+                <div class="modal fade" id="editTaskModal-@taskModal.TaskId" tabindex="-1" aria-labelledby="editTaskModalLabel-@taskModal.TaskId" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editTaskModalLabel-@taskModal.TaskId">Edit Task</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <form asp-controller="Admin" asp-action="EditTask" method="post" enctype="multipart/form-data">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="TaskId" value="@taskModal.TaskId" />
+                                <input type="hidden" name="OldImagePath" value="@taskModal.ImagePath" />
+
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Title *</label>
+                                            <input type="text" class="form-control" name="Title" value="@taskModal.Title" required />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Description *</label>
+                                        <textarea class="form-control" name="Description" rows="3" required>@taskModal.Description</textarea>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="assignedToId-@taskModal.TaskId" class="form-label">Assign To *</label>
+                                            <select class="form-select" id="assignedToId-@taskModal.TaskId" name="AssignedToId" disabled>
+                                                <option value="">Select Intern</option>
+                                                @foreach (var intern in ViewBag.ApprovedInterns)
+                                                {
+                                                    <option value="@intern.UserId" selected="@(intern.UserId == taskModal.AssignedToId)">
+                                                        @intern.FirstName @intern.LastName
+                                                    </option>
+                                                }
+                                            </select>
+                                            <!-- ✅ Hidden input to keep value posted back to controller -->
+                                            <input type="hidden" name="AssignedToId" value="@taskModal.AssignedToId" />
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="priority-@taskModal.TaskId" class="form-label">Priority</label>
+                                            <select class="form-select" id="priority-@taskModal.TaskId" name="Priority">
+                                                <option value="1" selected="@(taskModal.Priority == 1)">High</option>
+                                                <option value="2" selected="@(taskModal.Priority == 2)">Medium</option>
+                                                <option value="3" selected="@(taskModal.Priority == 3)">Low</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Due Date *</label>
+                                            <input type="datetime-local" class="form-control" name="DueDate" value="@taskModal.DueDate.ToString("yyyy-MM-ddTHH:mm")" required />
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Replace Image</label>
+                                            <input type="file" class="form-control" name="NewImage" accept="image/*" />
+                                            @if (!string.IsNullOrEmpty(taskModal.ImagePath))
+                                            {
+                                                <small class="text-muted d-block mt-1">Current: <a href="@taskModal.ImagePath" target="_blank">View</a></small>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Update Task</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+            <!-- end per-task modals -->
+
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createTaskForm" asp-controller="Admin" asp-action="CreateTask" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="title" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="Title" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="Description" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="assignedToId" class="form-label">Assign To *</label>
+                            <select class="form-select" id="assignedToId" name="AssignedToId" required>
+                                <option value="">Select Intern</option>
+                                @foreach (var intern in ViewBag.ApprovedInterns)
+                                {
+                                    <option value="@intern.UserId">@intern.FirstName @intern.LastName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-select" id="priority" name="Priority">
+                                <option value="1">High</option>
+                                <option value="2" selected>Medium</option>
+                                <option value="3">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+    <label for="dueDate" class="form-label">Due Date *</label>
+    <input type="datetime-local" class="form-control" id="dueDate" name="DueDate" required>
+</div>
+                        <div class="col-md-6 mb-3">
+                            <label for="taskImage" class="form-label">Task Image</label>
+                            <input type="file" class="form-control" id="taskImage" name="TaskImage" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+            document.addEventListener("DOMContentLoaded", function () {
+            const dueDateInput = document.getElementById("dueDate");
+
+            // ✅ Set minimum date to now (prevent selecting past dates)
+            const now = new Date();
+            const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString().slice(0,16); // format: yyyy-MM-ddTHH:mm
+
+            dueDateInput.min = localISOTime;
+        });
+        $(document).ready(function () {
+            // Live Filters (Status removed)
+            $('#priorityFilter, #assignedToFilter, #categoryFilter').on('change keyup', function () {
+                var priority = $('#priorityFilter').val() ? $('#priorityFilter').val().toString() : "";
+                var assignedTo = $('#assignedToFilter').val() ? $('#assignedToFilter').val().toString() : "";
+                var category = $('#categoryFilter').val() ? $('#categoryFilter').val().toString().toLowerCase() : "";
+
+                $('#tasksTable tbody tr').each(function () {
+                    var row = $(this);
+                    var rowPriority = (row.data('priority') || "").toString();
+                    var rowAssigned = (row.data('assignedto') || "").toString();
+                    var rowCategory = (row.data('category') || "").toString().toLowerCase();
+
+                    var match = true;
+                    if (priority && rowPriority !== priority) match = false;
+                    if (assignedTo && rowAssigned !== assignedTo) match = false;
+                    if (category && !rowCategory.includes(category)) match = false;
+
+                    row.toggle(match);
+                });
+            });
+
+            // Clear Filters
+            $('#clearFilters').on('click', function () {
+                $('#priorityFilter').val('');
+                $('#assignedToFilter').val('');
+                $('#categoryFilter').val('');
+                $('#tasksTable tbody tr').show();
+            });
+        });
+    </script>
+}
+
+@functions {
+    public string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning",
+            "In Progress" => "bg-info",
+            "Completed" => "bg-success",
+            "Overdue" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    public string GetProgressBarClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning",
+            "In Progress" => "bg-info",
+            "Completed" => "bg-success",
+            "Overdue" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

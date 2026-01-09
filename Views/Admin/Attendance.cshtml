@@ -1,0 +1,428 @@
+﻿@model List<IMS.Models.Attendance>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Attendance Management";
+    var filter = ViewBag.CurrentFilter as string ?? "All";
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<div class="admin-attendance-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary mb-0">📅 Attendance Management</h2>
+        <span class="badge bg-light text-primary" id="currentTimeBadge">
+            Current: @DateTime.Now.ToString("hh:mm:ss tt")
+        </span>
+    </div>
+
+    <!-- Filter and Search Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <form method="get" asp-action="Attendance" asp-controller="Admin" class="d-flex align-items-center gap-2">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                            <select name="filter" class="form-select" onchange="this.form.submit()">
+                                <option value="All" selected="@(filter == "All")">All Records</option>
+                                <option value="Approved" selected="@(filter == "Approved")">Approved</option>
+                                <option value="Rejected" selected="@(filter == "Rejected")">Rejected</option>
+                                <option value="Pending" selected="@(filter == "Pending")">Pending</option>
+                                <option value="Deleted" selected="@(filter == "Deleted")">Deleted</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="attendanceSearch" class="form-control"
+                               placeholder="Search by name, date, or status..."
+                               onkeyup="filterAttendance()" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group attendance by date -->
+    @{
+        var groupedAttendance = Model
+        .OrderByDescending(a => a.Date)
+        .GroupBy(a => a.Date);
+    }
+
+    @foreach (var group in groupedAttendance)
+    {
+        <div class="card shadow-sm mb-4 attendance-date-group">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-primary">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    @group.Key.ToString("dddd, MMMM dd, yyyy")
+                </h5>
+                <span class="badge bg-primary">@group.Count() Records</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 attendance-table" id="attendanceTable">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th>Intern</th>
+                                <th>Session</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Late</th>
+                                <th>Rendered</th>
+                                <th>Overtime</th>
+                                <th>Proof & Remarks</th>
+                                <th>Status</th>
+                                <th>Approved By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in group.OrderByDescending(a => a.TimeIn))
+                            {
+                                var timeIn = item.TimeIn?.ToString("h:mm tt") ?? "<span class=\"text-muted small\">No Time-In</span>";
+                                var timeOut = item.TimeOut?.ToString("h:mm tt") ?? "<span class=\"text-muted small  \">No Time-Out</span>";
+
+                                // Late calculation
+                                var lateTime = "<span class=\"text-muted small\">No record</span>";
+                                if (!item.IsAbsent && item.TimeIn.HasValue)
+                                {
+                                    if (item.IsLate > 0)
+                                    {
+                                        var lateDuration = TimeSpan.FromMinutes((int)item.IsLate);
+                                        lateTime = $"{(int)lateDuration.TotalHours}h {lateDuration.Minutes}m Late";
+                                    }
+                                    else
+                                    {
+                                        lateTime = "<span class=\"text-success fw-bold\">On Time</span>";
+                                    }
+                                }
+                                // Session
+                                var sessionDisplay = "No Session";
+                                if (!item.IsAbsent && !string.IsNullOrEmpty(item.Session))
+                                {
+                                    sessionDisplay = item.Session switch
+                                    {
+                                        "whole" => "Whole Day",
+                                        "morning" => "Morning",
+                                        "afternoon" => "Afternoon",
+                                        _ => item.Session
+                                    };
+                                }
+
+                                // Rendered hours
+                                var renderedDisplay = "No Hours";
+                                if (item.RenderedHours.HasValue && !item.IsAbsent)
+                                {
+                                    var rendered = TimeSpan.FromHours((double)item.RenderedHours.Value);
+                                    renderedDisplay = $"{(int)rendered.TotalHours}h {rendered.Minutes}m";
+                                }
+
+                                // Overtime
+                                var overtimeDisplay = "No Overtime";
+                                if (item.Overtime.HasValue && item.Overtime > 0 && !item.IsAbsent)
+                                {
+                                    var ot = TimeSpan.FromHours((double)item.Overtime.Value);
+                                    overtimeDisplay = $"{(int)ot.TotalHours}h {ot.Minutes}m";
+                                }
+
+                                // Status class
+                                var statusClass = item.IsAbsent ? "bg-danger" :
+                                item.ApprovalStatus switch
+                                {
+                                    "Approved" => "bg-success",
+                                    "Rejected" => "bg-danger",
+                                    "Pending" => "bg-warning text-dark",
+                                    _ => "bg-secondary"
+                                };
+
+                                var statusText = item.IsAbsent ? "Absent" : item.ApprovalStatus;
+
+                                <tr class="text-center @(item.IsAbsent ? "table-secondary" : "")">
+                                    <td>
+                                        <span>@item.Intern?.FirstName @item.Intern?.LastName</span> <br>
+                                        <small class="text-muted text-center">@item.Intern?.Email</small>
+                                    </td>
+                                    <td>
+                                        @if (item.IsAbsent)
+                                        {
+                                            <span class="text-muted small">No Session</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">@sessionDisplay</span>
+                                        }
+                                    </td>
+                                    <td>@Html.Raw(item.IsAbsent ? "<span class=\"text-muted small\">No Time-In</span>" : timeIn)</td>
+                                    <td>@Html.Raw(item.IsAbsent ? "<span class=\"text-muted small\">No Time-Out</span>" : timeOut)</td>
+                                    <td class="@(item.IsLate > 0 ? "text-danger fw-bold" : "text-success")">@Html.Raw(lateTime)</td>
+                                    <td>
+                                        @if (item.RenderedHours.HasValue && !item.IsAbsent)
+                                        {
+                                            <span class="badge bg-primary">@renderedDisplay</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No Hours</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Overtime.HasValue && item.Overtime > 0 && !item.IsAbsent)
+                                        {
+                                            <span class="badge bg-warning text-dark">@overtimeDisplay</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No Overtime</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsAbsent)
+                                        {
+                                            <button class="btn btn-sm btn-outline-info"
+                                                    onclick="showRemarksModal('@item.Remarks')">
+                                                <i class="fas fa-comment"></i> View Remarks
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-column gap-1">
+                                                @if (!string.IsNullOrEmpty(item.ProofImagePath))
+                                                {
+                                                    <button class="btn btn-sm btn-outline-primary"
+                                                            onclick="showImageModal('@Url.Content($"~/uploads/attendance/{item.ProofImagePath}")', '@item.Remarks')">
+                                                        <i class="fas fa-image"></i> View Proof
+                                                    </button>
+                                                }
+                                                @if (string.IsNullOrEmpty(item.ProofImagePath) && string.IsNullOrEmpty(item.Remarks))
+                                                {
+                                                    <span class="text-muted small">No details</span>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @statusClass">@statusText</span>
+                                    </td>
+                                    <td>
+                                        @if (item.ApprovalStatus == "Approved" && !item.IsAbsent)
+                                        {
+                                            if (item.ApprovedBy != null)
+                                            {
+                                                <small>@item.ApprovedBy.FirstName @item.ApprovedBy.LastName</small>
+
+                                                <br />
+                                                <small class="text-muted small">(@item.ApprovedBy.Position)</small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">Admin</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Not Applicable</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            @if (!item.IsDeleted)
+                                            {
+                                                // ✅ Actions for Active Records
+                                                @if (!item.IsAbsent)
+                                                {
+                                                    if (item.ApprovalStatus != "Approved")
+                                                    {
+                                                        <form asp-action="ApproveAttendance" asp-controller="Admin" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.AttendanceId" />
+                                                            <input type="hidden" name="filter" value="@filter" />
+                                                            <button type="submit" class="btn btn-sm btn-success" title="Approve"
+                                                                    onclick="return confirm('Approve this attendance record?')">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    if (item.ApprovalStatus != "Rejected")
+                                                    {
+                                                        <form asp-action="RejectAttendance" asp-controller="Admin" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.AttendanceId" />
+                                                            <input type="hidden" name="filter" value="@filter" />
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Reject"
+                                                                    onclick="return confirm('Reject this attendance record?')">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                }
+
+                                                <!-- ✅ Soft delete for ALL non-deleted records -->
+                                                <form asp-action="SoftDeleteAttendance" asp-controller="Admin" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.AttendanceId" />
+                                                    <input type="hidden" name="filter" value="@filter" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Move this record to deleted?')"
+                                                            title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                // ✅ Actions for Deleted Records
+                                                <form asp-action="RestoreAttendance" asp-controller="Admin" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.AttendanceId" />
+                                                    <input type="hidden" name="filter" value="@filter" />
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Restore"
+                                                            onclick="return confirm('Restore this record?')">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                </form>
+                                                <form asp-action="PermanentDeleteAttendance" asp-controller="Admin" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.AttendanceId" />
+                                                    <input type="hidden" name="filter" value="@filter" />
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                            onclick="return confirm('Permanently delete this record? This cannot be undone.')"
+                                                            title="Delete Permanently">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No attendance records found</h5>
+            <p class="text-muted">Try adjusting your filters or search criteria</p>
+        </div>
+    }
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Attendance Proof</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="modalImage" src="" alt="Proof" class="img-fluid rounded" style="max-height: 50vh;" />
+                </div>
+                <div class="mt-3">
+                    <h6>Remarks:</h6>
+                    <p id="modalRemarks" class="text-muted"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a id="downloadProof" href="#" class="btn btn-primary" download>
+                    <i class="fas fa-download me-2"></i>Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remarks Only Modal -->
+<div class="modal fade" id="remarksModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Attendance Remarks</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="remarksContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateCurrentTime() {
+            const badge = document.getElementById('currentTimeBadge');
+            if (badge) {
+                const now = new Date();
+                badge.textContent = `Current: ${now.toLocaleTimeString('en-US', {
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })}`;
+            }
+        }
+
+        window.onload = function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+        };
+
+        function showImageModal(imageSrc, remarks) {
+            document.getElementById("modalImage").src = imageSrc;
+            document.getElementById("downloadProof").href = imageSrc;
+            document.getElementById("modalRemarks").textContent = remarks || "No remarks provided";
+            new bootstrap.Modal(document.getElementById("imageModal")).show();
+        }
+
+        function showRemarksModal(remarks) {
+            const remarksContent = document.getElementById("remarksContent");
+            remarksContent.textContent = remarks || "No remarks provided";
+            new bootstrap.Modal(document.getElementById("remarksModal")).show();
+        }
+
+                function filterAttendance() {
+            const input = document.getElementById("attendanceSearch").value.toLowerCase();
+            const table = document.getElementById("attendanceTable");
+            const rows = table.querySelectorAll("tbody tr");
+
+            let visibleRows = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(input)) {
+                    row.style.display = "";
+                    visibleRows++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            const dateGroup = table.closest('.attendance-date-group');
+            if (dateGroup) {
+                dateGroup.style.display = visibleRows > 0 ? "" : "none";
+            }
+        }
+
+    </script>
+}

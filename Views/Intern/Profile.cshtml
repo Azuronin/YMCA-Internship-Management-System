@@ -1,0 +1,290 @@
+﻿@model IMS.Models.User
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My Profile";
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="~/css/Intern/profile.css" asp-append-version="true" />
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <div class="alert-notification" id="customAlert">
+        <i class="fas fa-check-circle"></i>
+        <span>@msg</span>
+    </div>
+}
+
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-header">
+            <i class="fas fa-user-edit header-icon"></i>
+            <h2>My Profile</h2>
+            <p>Update your personal information</p>
+        </div>
+
+        <form asp-action="UpdateProfile" asp-controller="Intern" method="post" enctype="multipart/form-data" novalidate id="profileForm">
+            <input type="hidden" asp-for="UserId" />
+
+            <div class="form-content">
+                <!-- Left Column -->
+                <div class="form-column">
+                    <!-- Profile Image Section -->
+                    <div class="image-section">
+                        <div class="image-container">
+                            <img src="@Url.Content(Model.ProfileImagePath)" alt="Profile Picture"
+                                 id="imgPreview" class="profile-image" data-bs-toggle="modal" data-bs-target="#imageModal" />
+                        </div>
+                        <label class="change-picture-btn">
+                            <i class="fas fa-camera"></i>
+                            Change Picture
+                            <input type="file" name="ProfileImage" accept=".jfif,.jpg,.jpeg,.png,.gif,.webp" onchange="previewImage(this)" />
+                        </label>
+                    </div>
+
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-user"></i> Personal Information</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-envelope icon"></i>
+                                    <input asp-for="Email" type="email" placeholder="Email Address" required class="@(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="Email" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user icon"></i>
+                                    <input asp-for="FirstName" placeholder="First Name" required class="@(ViewData.ModelState["FirstName"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="FirstName" class="error-text"></span>
+                            </div>
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user icon"></i>
+                                    <input asp-for="MiddleName" placeholder="Middle Name (Optional)" />
+                                    <div class="input-line"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user icon"></i>
+                                    <input asp-for="LastName" placeholder="Last Name" required class="@(ViewData.ModelState["LastName"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="LastName" class="error-text"></span>
+                            </div>
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-venus-mars icon"></i>
+                                    <select asp-for="Gender" required class="@(ViewData.ModelState["Gender"]?.Errors.Count > 0 ? "error" : "")">
+                                        <option value="">Select Gender</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                        <option>Other</option>
+                                        <option>Prefer not to say</option>
+                                    </select>
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="Gender" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-calendar icon"></i>
+                                    <input asp-for="Birthdate" type="date" id="birthdate" class="@(ViewData.ModelState["Birthdate"]?.Errors.Count > 0 ? "error" : "")" required />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="Birthdate" class="error-text"></span>
+                            </div>
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-birthday-cake icon"></i>
+                                    <input asp-for="Age" id="age" placeholder="Age" readonly />
+                                    <div class="input-line"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-phone icon"></i>
+                                    <input asp-for="ContactNumber" pattern="09[0-9]{9}" maxlength="11" placeholder="Contact Number" required class="@(ViewData.ModelState["ContactNumber"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="ContactNumber" class="error-text"></span>
+                            </div>
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-id-badge icon"></i>
+                                    <input asp-for="Position" placeholder="Position" readonly />
+                                    <div class="input-line"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-map-marker-alt icon"></i>
+                                    <input asp-for="Address" placeholder="Address" />
+                                    <div class="input-line"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="form-column">
+                    <!-- Academic Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-university icon"></i>
+                                    <input asp-for="School" placeholder="School/University" required class="@(ViewData.ModelState["School"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="School" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-book icon"></i>
+                                    <input asp-for="Course" placeholder="Course/Program" required class="@(ViewData.ModelState["Course"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="Course" class="error-text"></span>
+                            </div>
+                            <div class="form-group half-width">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-clock icon"></i>
+                                    <input asp-for="HoursToRender" readonly type="number" placeholder="Hours to Render" class="@(ViewData.ModelState["HoursToRender"]?.Errors.Count > 0 ? "error" : "")" />
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="HoursToRender" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-chart-line icon"></i>
+                                    <input asp-for="TotalRenderedHours" type="number" step="0.01" placeholder="Total Rendered Hours" readonly />
+                                    <div class="input-line"></div>
+                                </div>
+                                <small class="text-muted">This shows your current total rendered hours</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password Section -->
+                    <div class="form-section password-section">
+                        <h3><i class="fas fa-lock"></i> Change Password (Optional)</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-unlock icon"></i>
+                                    <input type="password" name="CurrentPassword" placeholder="Current Password" />
+                                    <i class="fas fa-eye toggle-password" onclick="togglePassword(this)"></i>
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="CurrentPassword" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock icon"></i>
+                                    <input type="password" name="NewPassword" id="NewPassword" placeholder="New Password" minlength="8" />
+                                    <i class="fas fa-eye toggle-password" onclick="togglePassword(this)"></i>
+                                    <div class="input-line"></div>
+                                </div>
+                                <div class="password-strength">
+                                    <div class="strength-bar" id="strengthBar"></div>
+                                </div>
+                                <small class="password-hint">At least 8 characters with uppercase, lowercase, number, and special character</small>
+                                <span asp-validation-for="NewPassword" class="error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-check-circle icon"></i>
+                                    <input type="password" name="ConfirmNewPassword" id="ConfirmNewPassword" placeholder="Confirm New Password" />
+                                    <i class="fas fa-eye toggle-password" onclick="togglePassword(this)"></i>
+                                    <div class="input-line"></div>
+                                </div>
+                                <span asp-validation-for="ConfirmNewPassword" class="error-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content" style="background-color: rgba(0,0,0,0.9); border: none;">
+            <div class="modal-header border-0 justify-content-end p-3">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex justify-content-center align-items-center p-0">
+                <img id="modalImgPreview" src="" class="img-fluid rounded shadow" style="max-height: 90vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script src="~/js/Intern/profile.js" asp-append-version="true"></script>
+    <script>
+        // Password toggle functionality (keeping this in the view as requested)
+        function togglePassword(icon) {
+            const input = icon.previousElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+}

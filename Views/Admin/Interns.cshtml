@@ -1,0 +1,442 @@
+﻿@{
+    ViewData["Title"] = "Intern Management";
+    var interns = ViewBag.Interns as IEnumerable<dynamic>;
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+<h2>Intern Management</h2>
+
+<div class="intern-filters">
+    <input type="text" id="searchInput" placeholder="Search interns..." class="search-box">
+    <select id="statusFilter" class="filter-select">
+        <option value="">All Statuses</option>
+        <option value="Approved">Approved</option>
+        <option value="Pending">Pending</option>
+        <option value="Disapproved">Disapproved</option>
+    </select>
+</div>
+
+<div class="stats-summary">
+    <div class="stat-card">
+        <h3>@(interns?.Count() ?? 0)</h3>
+        <p>Total Interns</p>
+    </div>
+    <div class="stat-card">
+        <h3>@(interns?.Count(i => i.Status == "Approved") ?? 0)</h3>
+        <p>Active Interns</p>
+    </div>
+    <div class="stat-card">
+        <h3>
+            @{
+                int completedInternships = 0;
+                if (interns != null)
+                {
+                    completedInternships = interns.Count(i =>
+                    (i.HoursToRender != null && i.HoursToRender > 0) &&
+                    (i.RenderedHours >= i.HoursToRender));
+                }
+                @completedInternships
+            }
+        </h3>
+        <p>Completed Internships</p>
+    </div>
+    <div class="stat-card">
+        @{
+            double avgCompletion = 0;
+            if (interns != null && interns.Any())
+            {
+                avgCompletion = interns.Average(i =>
+                {
+                    double completed = Convert.ToDouble(i.CompletedTasks ?? 0);
+                    double total = Convert.ToDouble(i.TotalTasks ?? 0);
+                    return total > 0 ? completed / total : 0;
+                });
+            }
+        }
+        <h3>@avgCompletion.ToString("P0")</h3>
+        <p>Average Completion</p>
+    </div>
+</div>
+
+@if (interns == null || !interns.Any())
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No interns found.
+    </div>
+}
+else
+{
+    <table class="intern-table">
+        <thead>
+            <tr>
+                <th>Intern</th>
+                <th>Contact</th>
+                <th>Hours Progress</th>
+                <th>Tasks</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var intern in interns)
+            {
+                decimal renderedHours = intern.RenderedHours ?? 0m;
+                decimal hoursToRender = intern.HoursToRender ?? 0m;
+                int completedTasks = intern.CompletedTasks ?? 0;
+                int totalTasks = intern.TotalTasks ?? 0;
+
+                var completionPercent = hoursToRender > 0 ?
+                (double)(renderedHours / hoursToRender * 100) : 0;
+
+                var taskCompletionPercent = totalTasks > 0 ?
+                (double)completedTasks / totalTasks * 100 : 0;
+
+                <tr>
+                    <td class="intern-info">
+                        <img src="@(intern.ProfileImagePath ?? "/images/default-profile.png")" alt="@intern.FullName" class="profile-img">
+                        <div>
+                            <strong>@intern.FullName</strong>
+                            <br>
+                            <span class="school">@(intern.School ?? "Not specified")</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div>@intern.Email</div>
+                        <div class="contact-number">@(intern.ContactNumber ?? "No contact")</div>
+                    </td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>@($"{renderedHours:0.00}")/@hoursToRender hours</span>
+                                <span>@completionPercent.ToString("0")%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: @(Math.Min(completionPercent, 100))%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>@completedTasks/@totalTasks tasks</span>
+                                <span>@taskCompletionPercent.ToString("0")%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill task-progress" style="width: @(Math.Min(taskCompletionPercent, 100))%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge @((intern.Status ?? "").ToLower())">@intern.Status</span>
+                        @if (renderedHours >= hoursToRender && hoursToRender > 0)
+                        {
+                            <div class="completion-badge">Completed</div>
+                        }
+                    </td>
+                    <td class="action-buttons">
+                        <a href="@Url.Action("ViewInternDetails", new { id = intern.UserId })" class="btn-view" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="@Url.Action("Attendance", new { id = intern.UserId })" class="btn-attendance" title="View Attendance">
+                            <i class="fas fa-calendar"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+<style>
+    .alert {
+        padding: 15px;
+        background: #e7f3ff;
+        border: 1px solid #b8daff;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+
+    .intern-filters {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+
+    .search-box {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 250px;
+    }
+
+    .filter-select {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .export-btn {
+        padding: 8px 16px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+        .stat-card h3 {
+            margin: 0;
+            font-size: 24px;
+            color: #3b7ddd;
+        }
+
+        .stat-card p {
+            margin: 5px 0 0;
+            color: #6c757d;
+        }
+
+    .intern-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+        .intern-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .intern-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+    .intern-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .profile-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .school {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .contact-number {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .progress-container {
+        width: 100%;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #3b7ddd;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .task-progress {
+        background: #1cbb8c;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+        .status-badge.approved {
+            background: rgba(28, 187, 140, 0.15);
+            color: #1cbb8c;
+        }
+
+        .status-badge.pending {
+            background: rgba(252, 185, 44, 0.15);
+            color: #fcb92c;
+        }
+
+        .status-badge.disapproved {
+            background: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+        }
+
+    .completion-badge {
+        margin-top: 4px;
+        padding: 3px 6px;
+        background: rgba(28, 187, 140, 0.15);
+        color: #1cbb8c;
+        border-radius: 8px;
+        font-size: 11px;
+        display: inline-block;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-view, .btn-edit, .btn-attendance {
+        padding: 6px;
+        border-radius: 4px;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-view {
+        background: #3b7ddd;
+    }
+
+    .btn-edit {
+        background: #fcb92c;
+    }
+
+    .btn-attendance {
+        background: #6c757d;
+    }
+
+        .btn-view:hover, .btn-edit:hover, .btn-attendance:hover {
+            opacity: 0.9;
+        }
+</style>
+
+<script>
+    function exportToExcel() {
+        // Simple export functionality (would be more complex in real implementation)
+        const table = document.querySelector('.intern-table');
+        if (!table) return;
+
+        let csv = [];
+
+        // Headers
+        const headers = [];
+        table.querySelectorAll('thead th').forEach(th => {
+            if (!th.querySelector('i')) { // Skip action column
+                headers.push(th.textContent.trim());
+            }
+        });
+        csv.push(headers.join(','));
+
+        // Data
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const rowData = [];
+
+            cells.forEach((cell, index) => {
+                if (index !== 6) { // Skip action column
+                    let text = cell.textContent.trim();
+
+                    // Handle progress information
+                    if (index === 3 || index === 4) {
+                        const labels = cell.querySelectorAll('.progress-label span');
+                        text = labels[0].textContent;
+                    }
+
+                    rowData.push(`"${text}"`);
+                }
+            });
+
+            csv.push(rowData.join(','));
+        });
+
+        // Download
+        const csvString = csv.join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvString);
+        a.target = '_blank';
+        a.download = 'interns-export.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Simple search functionality
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const searchText = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.intern-table tbody tr');
+        if (!rows.length) return;
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
+
+    // Filter by status
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        const status = this.value;
+        const rows = document.querySelectorAll('.intern-table tbody tr');
+        if (!rows.length) return;
+
+        rows.forEach(row => {
+            if (!status) {
+                row.style.display = '';
+                return;
+            }
+
+            const statusCell = row.querySelector('.status-badge');
+            if (statusCell && statusCell.textContent.toLowerCase() === status.toLowerCase()) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>

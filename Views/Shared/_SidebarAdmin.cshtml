@@ -1,0 +1,311 @@
+﻿@{
+    int attendanceCount = ViewBag.AttendanceCount ?? 0;
+    int pendingUsersCount = ViewBag.PendingUsersCount ?? 0;
+    int applicationsCount = ViewBag.ApplicationsCount ?? 0;
+    int notificationsCount = ViewBag.NotificationsCount ?? 0;
+    int evaluationCount = ViewBag.EvaluationCount ?? 0;
+    int taskCount = ViewBag.TaskCount ?? 0;
+}
+
+<link rel="stylesheet" href="~/css/sidebar.css" asp-append-version="true" />
+<!-- Mobile backdrop -->
+<div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="header-content">
+            <button class="toggle-btn" title="Toggle Sidebar">
+                <img src="~/images/logo.png" alt="Logo" class="logo-icon">
+            </button>
+        </div>
+    </div>
+
+    <div class="sidebar-content">
+        <ul class="sidebar-menu">
+            <!-- Dashboard -->
+            <li class="menu-category"><span>Dashboard</span></li>
+            <li>
+                <a asp-controller="Admin" asp-action="Dashboard" class="menu-link" data-tooltip="Dashboard" title="Dashboard">
+                    <div class="menu-icon"><i class="fas fa-chart-pie"></i></div>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+
+            <!-- Management -->
+            <li class="menu-category"><span>Management</span></li>
+            <li>
+                <a asp-controller="Admin" asp-action="Attendance" class="menu-link" data-tooltip="Attendance" title="Attendance">
+                    <div class="menu-icon"><i class="fas fa-calendar-check"></i></div>
+                    <span class="menu-text">Attendance</span>
+                    @if (attendanceCount > 0)
+                    {
+                        <span class="menu-badge">@attendanceCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="TaskManagement" class="menu-link" data-tooltip="Task Management" title="Task">
+                    <div class="menu-icon"><i class="fas fa-tasks"></i></div>
+                    <span class="menu-text">Task Management</span>
+                    @if (taskCount > 0)
+                    {
+                        <span class="menu-badge">@taskCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="TaskProgress" class="menu-link" data-tooltip="Task Progress" title="Progress">
+                    <div class="menu-icon"><i class="fas fa-spinner"></i></div>
+                    <span class="menu-text">Task Progress</span>
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="ManageUsers" class="menu-link" data-tooltip="User Management" title="User Management">
+                    <div class="menu-icon"><i class="fas fa-id-card"></i></div>
+                    <span class="menu-text">User Management</span>
+                    @if (pendingUsersCount > 0)
+                    {
+                        <span class="menu-badge">@pendingUsersCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="Interns" class="menu-link" data-tooltip="Intern Management" title="Interns">
+                    <div class="menu-icon"><i class="fas fa-user-graduate"></i></div>
+                    <span class="menu-text">Intern Management</span>
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="Applications" class="menu-link" data-tooltip="Applications" title="Applications">
+                    <div class="menu-icon"><i class="fas fa-file-alt"></i></div>
+                    <span class="menu-text">Applications</span>
+                    @if (applicationsCount > 0)
+                    {
+                        <span class="menu-badge">@applicationsCount</span>
+                    }
+                </a>
+            </li>
+
+            <!-- Content -->
+            <li class="menu-category"><span>Content</span></li>
+            <li>
+                <a asp-controller="Admin" asp-action="Documents" class="menu-link" data-tooltip="Documents" title="Documents">
+                    <div class="menu-icon"><i class="fas fa-folder"></i></div>
+                    <span class="menu-text">Documents</span>
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="Notifications" class="menu-link" data-tooltip="Notifications" title="Notifications">
+                    <div class="menu-icon"><i class="fas fa-bell"></i></div>
+                    <span class="menu-text">Notifications</span>
+                    @if (notificationsCount > 0)
+                    {
+                        <span class="menu-badge">@notificationsCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="Announcements" class="menu-link" data-tooltip="Announcements" title="Announcements">
+                    <div class="menu-icon"><i class="fas fa-bullhorn"></i></div>
+                    <span class="menu-text">Announcements</span>
+                </a>
+            </li>
+
+            <!-- Performance -->
+            <li class="menu-category"><span>Performance</span></li>
+            <li>
+                <a asp-controller="Admin" asp-action="Evaluation" class="menu-link" data-tooltip="Evaluation" title="Evaluation">
+                    <div class="menu-icon"><i class="fas fa-star-half-alt"></i></div>
+                    <span class="menu-text">Evaluation</span>
+                    @if (evaluationCount > 0)
+                    {
+                        <span class="menu-badge">@evaluationCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Admin" asp-action="Reports" class="menu-link" data-tooltip="Reports" title="Reports">
+                    <div class="menu-icon"><i class="fas fa-chart-line"></i></div>
+                    <span class="menu-text">Reports</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Footer -->
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar"><i class="fas fa-user-circle"></i></div>
+                <div class="user-details">
+                    <span class="user-name">Supervisor</span>
+                    <span class="user-role">System Admin</span>
+                </div>
+            </div>
+            <a asp-controller="Account" asp-action="Login"
+               class="logout-btn"
+               title="Logout"
+               onclick="return confirm('Are you sure you want to logout?')">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.getElementById("sidebar");
+        const toggleBtn = document.querySelector(".toggle-btn");
+        const menuLinks = document.querySelectorAll(".menu-link");
+        const mobileBackdrop = document.getElementById("mobileBackdrop");
+        const currentUrl = window.location.pathname.toLowerCase();
+
+        let isMobile = window.innerWidth <= 768;
+
+        // Check if device is mobile
+        function checkMobile() {
+            const wasMobile = isMobile;
+            isMobile = window.innerWidth <= 768;
+
+            if (wasMobile !== isMobile) {
+                // Reset sidebar state when switching between mobile/desktop
+                sidebar.classList.remove("mobile-open");
+                mobileBackdrop.classList.remove("active");
+                document.body.style.overflow = "";
+
+                // Restore desktop collapsed state if not mobile
+                if (!isMobile && localStorage.getItem("sidebarCollapsed") === "true") {
+                    sidebar.classList.add("collapsed");
+                } else if (isMobile) {
+                    sidebar.classList.remove("collapsed");
+                }
+            }
+        }
+
+        // Sidebar toggle functionality
+        toggleBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (isMobile) {
+                // Mobile: Toggle overlay sidebar
+                sidebar.classList.toggle("mobile-open");
+                mobileBackdrop.classList.toggle("active");
+
+                if (sidebar.classList.contains("mobile-open")) {
+                    document.body.style.overflow = "hidden"; // Prevent background scroll
+                } else {
+                    document.body.style.overflow = "";
+                }
+            } else {
+                // Desktop: Toggle collapsed state
+                sidebar.classList.toggle("collapsed");
+                localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
+            }
+        });
+
+        // Mobile backdrop click to close
+        mobileBackdrop.addEventListener("click", () => {
+            if (isMobile) {
+                sidebar.classList.remove("mobile-open");
+                mobileBackdrop.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+        });
+
+        // Close mobile sidebar when clicking menu items
+        menuLinks.forEach(link => {
+            link.addEventListener("click", () => {
+                if (isMobile && sidebar.classList.contains("mobile-open")) {
+                    sidebar.classList.remove("mobile-open");
+                    mobileBackdrop.classList.remove("active");
+                    document.body.style.overflow = "";
+                }
+            });
+        });
+
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener("resize", () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                checkMobile();
+            }, 150);
+        });
+
+        // Handle orientation change on mobile
+        window.addEventListener("orientationchange", () => {
+            setTimeout(() => {
+                checkMobile();
+            }, 500);
+        });
+
+        // Restore desktop state on initial load
+        if (!isMobile && localStorage.getItem("sidebarCollapsed") === "true") {
+            sidebar.classList.add("collapsed");
+        }
+
+        // Active link highlight
+        menuLinks.forEach(link => {
+            const href = link.getAttribute("href")?.toLowerCase();
+            if (currentUrl === href || (href && currentUrl.startsWith(href) && href !== '/')) {
+                link.classList.add("active");
+            }
+        });
+
+        // Touch event handling for better mobile experience
+        let startX = 0;
+        let startY = 0;
+        let isScrolling = false;
+
+        document.addEventListener("touchstart", (e) => {
+            if (isMobile) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isScrolling = false;
+            }
+        }, { passive: true });
+
+        document.addEventListener("touchmove", (e) => {
+            if (isMobile) {
+                const deltaX = Math.abs(e.touches[0].clientX - startX);
+                const deltaY = Math.abs(e.touches[0].clientY - startY);
+
+                if (deltaY > deltaX) {
+                    isScrolling = true;
+                }
+            }
+        }, { passive: true });
+
+        // Swipe to open/close sidebar on mobile
+        document.addEventListener("touchend", (e) => {
+            if (isMobile && !isScrolling) {
+                const endX = e.changedTouches[0].clientX;
+                const deltaX = endX - startX;
+                const threshold = 50;
+
+                // Swipe right to open (from left edge)
+                if (startX < 20 && deltaX > threshold && !sidebar.classList.contains("mobile-open")) {
+                    sidebar.classList.add("mobile-open");
+                    mobileBackdrop.classList.add("active");
+                    document.body.style.overflow = "hidden";
+                }
+                // Swipe left to close (when sidebar is open)
+                else if (deltaX < -threshold && sidebar.classList.contains("mobile-open")) {
+                    sidebar.classList.remove("mobile-open");
+                    mobileBackdrop.classList.remove("active");
+                    document.body.style.overflow = "";
+                }
+            }
+        }, { passive: true });
+
+        // Prevent body scroll when sidebar is open on mobile
+        sidebar.addEventListener("touchmove", (e) => {
+            if (isMobile && sidebar.classList.contains("mobile-open")) {
+                e.stopPropagation();
+            }
+        });
+
+        // Initialize mobile check
+        checkMobile();
+    });
+</script>

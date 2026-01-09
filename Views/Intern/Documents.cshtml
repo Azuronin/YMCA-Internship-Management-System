@@ -1,0 +1,413 @@
+﻿@model List<IMS.Models.Documents>
+@{
+    ViewData["Title"] = "My Documents";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="~/css/Intern/documents.css" />
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h2><i class="fas fa-file-alt me-2"></i>My Documents</h2>
+        <div class="d-flex align-items-center gap-2">
+            <div class="input-group" style="max-width: 300px;">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" id="searchInput" class="form-control" placeholder="Search documents..." />
+            </div>
+
+            @* Show Upload button only if there are documents *@
+            @if (Model != null && Model.Any())
+            {
+                <button class="btn btn-primary" onclick="showUploadModal()">
+                    <i class="fas fa-upload me-1"></i> Upload
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Status Summary Cards -->
+    <div class="row mb-4">
+        @{
+            var pendingCount = Model.Count(d => d.Status == "Pending");
+            var approvedCount = Model.Count(d => d.Status == "Approved");
+            var rejectedCount = Model.Count(d => d.Status == "Rejected");
+            var totalCount = Model.Count;
+        }
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon total">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <h5 class="card-title">Total</h5>
+                    <p class="card-value">@totalCount</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h5 class="card-title">Pending</h5>
+                    <p class="card-value">@pendingCount</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon approved">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h5 class="card-title">Approved</h5>
+                    <p class="card-value">@approvedCount</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon rejected">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h5 class="card-title">Rejected</h5>
+                    <p class="card-value">@rejectedCount</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="docTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>File Name <i class="fas fa-sort ms-1 text-muted"></i></th>
+                            <th>Type <i class="fas fa-sort ms-1 text-muted"></i></th>
+                            <th>Upload Date <i class="fas fa-sort ms-1 text-muted"></i></th>
+                            <th>Status</th>
+                            <th>Assigned By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                                        <span>@item.FileName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">@item.DocumentType</span>
+                                </td>
+                                <td>@item.UploadDate.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <span class="badge status-badge @item.Status.ToLower()">
+                                        @if (item.Status == "Pending")
+                                        {
+                                            <i class="fas fa-clock me-1"></i>
+                                        }
+                                        else if (item.Status == "Approved")
+                                        {
+                                            <i class="fas fa-check me-1"></i>
+                                        }
+                                        else if (item.Status == "Rejected")
+                                        {
+                                            <i class="fas fa-times me-1"></i>
+                                        }
+                                        @item.Status
+                                    </span>
+                                </td>
+                                <!-- Approver/Rejector Column -->
+                                <td data-label="@(item.Status == "Rejected" ? "Rejected By" : "Approved By")">
+                                    @if (item.Status == "Approved" || item.Status == "Rejected")
+                                    {
+                                        if (item.ApprovedBy != null)
+                                        {
+                                            <span class="approver-info">
+                                                @($"{item.ApprovedBy.FirstName} {item.ApprovedBy.LastName} ({item.ApprovedBy.Position})")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Admin</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--</span>
+                                    }
+                                </td>
+
+                                <!-- Actions Column -->
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <!-- View -->
+                                        <a href="@item.FilePath" target="_blank" class="btn btn-outline-primary" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <!-- Download -->
+                                        <a href="@item.FilePath" download class="btn btn-outline-success" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+
+                                        <!-- Delete (only if Pending) -->
+                                        @if (item.Status == "Pending")
+                                        {
+                                            <a href="@Url.Action("DeleteDocument", "Intern", new { id = item.DocumentId })"
+                                               class="btn btn-outline-danger"
+                                               title="Delete"
+                                               onclick="return confirm('Are you sure you want to delete this document?')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                    <h5>No Documents Uploaded Yet</h5>
+                    <p class="text-muted">Upload your first document to get started.</p>
+                    <button class="btn btn-primary mt-2" onclick="showUploadModal()">
+                        <i class="fas fa-upload me-1"></i> Upload Document
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-upload me-2"></i>Upload New Document</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="UploadDocument" method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Document Type</label>
+                        <select name="documentType" id="docType" class="form-select" required onchange="handleTypeChange(this.value)">
+                            <option value="">-- Select Document Type --</option>
+                            <option value="MOA">MOA</option>
+                            <option value="Endorsement">Endorsement</option>
+                            <option value="Acceptance">Acceptance</option>
+                            <option value="Resume">Resume</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="otherTypeGroup" style="display:none;">
+                        <label class="form-label">Specify Document Name</label>
+                        <input type="text" name="otherTypeName" class="form-control" placeholder="Enter document name..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Select File</label>
+                        <input type="file" name="file" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <div class="form-text">Accepted formats: PDF, Word documents, JPEG, PNG</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-card {
+        transition: transform 0.2s;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .status-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+
+        .status-icon.total {
+            background-color: #e3f2fd;
+            color: #0d6efd;
+        }
+
+        .status-icon.pending {
+            background-color: #fff3cd;
+            color: #ffc107;
+        }
+
+        .status-icon.approved {
+            background-color: #d1e7dd;
+            color: #198754;
+        }
+
+        .status-icon.rejected {
+            background-color: #f8d7da;
+            color: #dc3545;
+        }
+
+    .card-title {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 600;
+        border-radius: 0.25rem;
+    }
+
+        .status-badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.approved {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-badge.rejected {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+    .approver-info {
+        font-size: 0.85rem;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
+
+    .btn-group-sm > .btn, .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const table = document.getElementById('docTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent || cells[j].innerText;
+                    if (cellText.toLowerCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                rows[i].style.display = found ? '' : 'none';
+            }
+        });
+
+        // Show upload modal function
+        window.showUploadModal = function() {
+            const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+            modal.show();
+        }
+
+        // Hide upload modal function
+        window.hideUploadModal = function() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+            modal.hide();
+        }
+
+        // Handle document type change
+        window.handleTypeChange = function(value) {
+            const otherTypeGroup = document.getElementById('otherTypeGroup');
+            otherTypeGroup.style.display = value === 'Other' ? 'block' : 'none';
+        }
+
+        // Form validation
+        const uploadForm = document.getElementById('uploadForm');
+        uploadForm.addEventListener('submit', function(e) {
+            const docType = document.getElementById('docType');
+            const fileInput = document.querySelector('input[name="file"]');
+
+            if (!docType.value) {
+                e.preventDefault();
+                alert('Please select a document type');
+                docType.focus();
+                return false;
+            }
+
+            if (!fileInput.value) {
+                e.preventDefault();
+                alert('Please select a file to upload');
+                fileInput.focus();
+                return false;
+            }
+
+            return true;
+        });
+    });
+</script>

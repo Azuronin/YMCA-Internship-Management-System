@@ -1,0 +1,475 @@
+﻿/* Mobile Header (hidden on desktop) */
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 16px;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 998;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.mobile-menu-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    padding: 8px;
+    color: #333;
+    border-radius: 4px;
+    touch-action: manipulation;
+}
+
+    .mobile-menu-toggle:hover {
+        background: #f8f9fa;
+    }
+
+.mobile-title {
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.mobile-time {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Main content adjustments */
+.main-content {
+    transition: margin-left 0.3s ease;
+}
+
+/* Dashboard header responsive */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.dashboard-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.header-right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.date-text-mobile {
+    display: none;
+}
+
+/* Stats cards responsive */
+.dashboard-stat-card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s;
+    cursor: pointer;
+    min-height: 120px;
+}
+
+    .dashboard-stat-card:hover {
+        transform: translateY(-3px);
+    }
+
+.stat-icon-size {
+    font-size: 1.8rem;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+}
+
+.stat-badge {
+    font-size: 0.7rem;
+}
+
+/* Table responsive adjustments */
+.intern-name-col {
+    min-width: 160px;
+    width: 40%;
+}
+
+.hours-col {
+    min-width: 80px;
+    width: 25%;
+}
+
+.tasks-col {
+    min-width: 60px;
+    width: 15%;
+}
+
+.intern-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.intern-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.school-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+    display: inline-block;
+}
+
+.hours-info {
+    white-space: nowrap;
+}
+
+.task-badge {
+    font-size: 0.75rem;
+}
+
+/* Card and general responsive styles */
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.bg-light-hover:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-2px);
+    transition: all 0.2s;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    color: #6c757d;
+    padding: 0.75rem 0.5rem;
+}
+
+.table td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+}
+
+.task-summary-icon {
+    font-size: 1.5rem;
+}
+
+.task-summary-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.task-summary-number {
+    font-size: 1.3rem;
+}
+
+.task-summary-item {
+    transition: all 0.2s ease;
+}
+
+.applicant-item {
+    padding: 0.75rem 0;
+}
+
+.applicant-name {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+.empty-state {
+    padding: 2rem 1rem;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+    .main-content {
+        margin-left: 240px;
+    }
+
+    .dashboard-title {
+        font-size: 1.75rem;
+    }
+
+    .stat-icon-size {
+        font-size: 1.6rem;
+    }
+
+    .stat-number {
+        font-size: 1.6rem;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .mobile-header {
+        display: flex;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding-top: 80px !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Hide desktop header */
+    .dashboard-header {
+        display: none;
+    }
+
+    /* Stats cards mobile layout */
+    .stats-row {
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-stat-card {
+        min-height: 100px;
+    }
+
+        .dashboard-stat-card .card-body {
+            padding: 1rem 0.75rem;
+        }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .stat-number {
+        font-size: 1.4rem;
+    }
+
+    .stat-icon-size {
+        font-size: 1.4rem;
+    }
+
+    .stat-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
+    }
+
+    /* Date/time badges responsive */
+    .date-text {
+        display: none;
+    }
+
+    .date-text-mobile {
+        display: inline;
+    }
+
+    .time-badge {
+        display: none;
+    }
+
+    /* Table mobile adjustments */
+    .table {
+        font-size: 0.85rem;
+    }
+
+        .table th {
+            font-size: 0.65rem;
+            padding: 0.5rem 0.25rem;
+        }
+
+        .table td {
+            padding: 0.75rem 0.25rem;
+        }
+
+    .intern-name-col {
+        width: 50%;
+        min-width: 140px;
+    }
+
+    .hours-col {
+        width: 30%;
+    }
+
+    .tasks-col {
+        width: 20%;
+    }
+
+    .intern-name {
+        font-size: 0.85rem;
+    }
+
+    .avatar-sm {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .hours-text {
+        font-size: 0.7rem;
+    }
+
+    .task-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
+    }
+
+    /* Task summary mobile adjustments */
+    .task-summary-icon {
+        font-size: 1.2rem;
+    }
+
+    .task-summary-label {
+        font-size: 0.7rem;
+    }
+
+    .task-summary-number {
+        font-size: 1.1rem;
+    }
+
+    .task-summary-item {
+        padding: 0.75rem 0.5rem;
+    }
+
+    /* Applicant items mobile */
+    .applicant-item {
+        padding: 0.5rem 0;
+    }
+
+    .applicant-name {
+        font-size: 0.85rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    /* Card adjustments */
+    .card-body {
+        padding: 1rem;
+    }
+
+    .card-header {
+        padding: 1rem;
+    }
+
+    .empty-state {
+        padding: 1.5rem 1rem;
+    }
+
+        .empty-state i {
+            font-size: 1.5rem !important;
+        }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .main-content {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .mobile-title {
+        font-size: 14px;
+    }
+
+    .dashboard-stat-card {
+        min-height: 90px;
+    }
+
+        .dashboard-stat-card .card-body {
+            padding: 0.75rem 0.5rem;
+        }
+
+    .stat-label {
+        font-size: 0.65rem;
+        line-height: 1.1;
+    }
+
+    .stat-number {
+        font-size: 1.2rem;
+    }
+
+    .stat-icon-size {
+        font-size: 1.2rem;
+    }
+
+    .intern-name-col {
+        min-width: 120px;
+    }
+
+    .intern-name {
+        font-size: 0.8rem;
+    }
+
+    .avatar-sm {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+    }
+
+    .task-summary-item {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .task-summary-icon {
+        font-size: 1rem;
+    }
+
+    .task-summary-label {
+        font-size: 0.65rem;
+    }
+
+    .task-summary-number {
+        font-size: 1rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    .card-header {
+        padding: 0.75rem;
+    }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+    .mobile-header {
+        height: 50px;
+    }
+
+    .main-content {
+        padding-top: 70px !important;
+    }
+
+    .dashboard-stat-card {
+        min-height: 80px;
+    }
+}

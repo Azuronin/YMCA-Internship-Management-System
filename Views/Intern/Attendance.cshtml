@@ -1,0 +1,685 @@
+﻿@model List<IMS.Models.Attendance>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My Attendance";
+
+    var today = DateTime.Today;
+    var todayRecord = Model.FirstOrDefault(a => a.Date.Date == today && !a.IsDeleted);
+    var hasTimedInToday = todayRecord?.TimeIn.HasValue ?? false;
+    var hasCompletedToday = todayRecord?.TimeOut.HasValue ?? false;
+    var isAbsentToday = todayRecord?.IsAbsent ?? false;
+    var currentTime = DateTime.Now;
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<div class="attendance-container container py-4">
+    <!-- Time Settings Info -->
+    <div class="alert alert-info d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <strong><i class="fas fa-door-open me-2"></i>Opening Time:</strong>
+            <span id="openingTime">@ViewBag.OpeningTime</span>
+        </div>
+        <div>
+            <strong><i class="fas fa-door-closed me-2"></i>Closing Time:</strong>
+            <span id="closingTime">@ViewBag.ClosingTime</span>
+        </div>
+        <div>
+            <strong><i class="fas fa-clock me-2"></i>Current Time:</strong>
+            <span id="currentTimeDisplay">@currentTime.ToString("h:mm:ss tt")</span>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card summary-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Days</h5>
+                    <p class="card-text display-6">@Model.Count(a => !a.IsDeleted && !a.IsAbsent)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card summary-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Late Days</h5>
+                    <p class="card-text display-6 text-danger">
+                        @Model.Count(a => a.IsLate > 0 && !a.IsDeleted && !a.IsAbsent)
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card summary-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Absent Days</h5>
+                    <p class="card-text display-6 text-danger">
+                        @Model.Count(a => a.IsAbsent && !a.IsDeleted)
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card summary-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Hours</h5>
+                    <p class="card-text display-6 text-success">
+                        @{
+                            var totalHours = Model.Where(a => a.RenderedHours.HasValue && !a.IsDeleted && !a.IsAbsent)
+                            .Sum(a => a.RenderedHours) ?? 0;
+                            var totalTimeSpan = TimeSpan.FromHours((double)totalHours);
+                            @($"{(int)totalTimeSpan.TotalHours}h {totalTimeSpan.Minutes}m")
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card summary-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Overtime</h5>
+                    <p class="card-text display-6 text-warning">
+                        @{
+                            var overtimeHours = Model.Where(a => a.Overtime.HasValue && a.Overtime > 0 && !a.IsDeleted && !a.IsAbsent)
+                            .Sum(a => a.Overtime) ?? 0;
+                            var overtimeSpan = TimeSpan.FromHours((double)overtimeHours);
+                            @($"{(int)overtimeSpan.TotalHours}h {overtimeSpan.Minutes}m")
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (ViewBag.InternshipCompleted)
+    {
+        <div class="alert alert-success text-center">
+            Congratulations! You have already completed your required internship hours.
+        </div>
+    }
+    else
+    {
+        <!-- Status Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center">
+                    <div class="mb-2 mb-md-0">
+                        <h5 class="mb-1">Today's Status</h5>
+                        @if (hasCompletedToday)
+                        {
+                            <span class="badge bg-success">Completed</span>
+                        }
+                        else if (hasTimedInToday)
+                        {
+                            <span class="badge bg-warning text-dark">Currently Working</span>
+                        }
+                        else if (isAbsentToday)
+                        {
+                            <span class="badge bg-danger">Absent</span>
+                            @if (!string.IsNullOrEmpty(todayRecord?.Remarks))
+                            {
+                                <div class="mt-2 small text-danger">
+                                    <strong>Reason:</strong> @todayRecord.Remarks
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Not Started</span>
+                        }
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="timeInBtn"
+                        @(hasTimedInToday || hasCompletedToday || isAbsentToday ? "disabled" : "")>
+                            <i class="fas fa-sign-in-alt me-2"></i>Time In
+                        </button>
+                        <button class="btn btn-danger" id="timeOutBtn"
+                        @(!hasTimedInToday || hasCompletedToday ? "disabled" : "")>
+                            <i class="fas fa-sign-out-alt me-2"></i>Time Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Absent Form (if applicable) -->
+    @if (ViewBag.ShowAbsentForm == true && !hasTimedInToday && !isAbsentToday)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Mark Absent</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="MarkAbsent" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="absentReason" class="form-label">Reason for Absence <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="absentReason" name="absentReason" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-times me-2"></i>Mark as Absent
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+    <!-- Time In Modal -->
+    <div class="modal fade" id="timeInModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <!-- wider for camera -->
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Time In</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-action="TimeIn" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body">
+                        <!-- Session Selection -->
+                        <div class="mb-3">
+                            <label for="sessionType" class="form-label">Session Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="sessionType" name="sessionType" required>
+                                <option value="">Select Session</option>
+                                <option value="whole">Whole Day (8:00 AM - 5:00 PM)</option>
+                                <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
+                                <option value="afternoon">Afternoon (1:00 PM - 5:00 PM)</option>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Time Settings Display -->
+                        <div class="alert alert-info" id="sessionInfoAlert" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <div id="sessionInfo"></div>
+                        </div>
+
+                        <div class="alert alert-warning" id="currentTimeAlert">
+                            <i class="fas fa-clock me-2"></i>
+                            Current time is <span id="modalCurrentTime">@currentTime.ToString("h:mm tt")</span>.
+                        </div>
+
+                        <!-- Upload Proof -->
+                        <div class="mb-3">
+                            <label for="proofImage" class="form-label">Upload Proof Image</label>
+                            <input type="file" class="form-control" id="proofImage" name="proofImage" accept="image/*">
+                            <small class="text-muted">Upload a clear photo (max 5MB)</small>
+                        </div>
+
+                        <!-- OR Capture via Camera -->
+                        <div class="mb-3">
+                            <label class="form-label">Or Capture from Camera</label>
+                            <div class="d-flex flex-column align-items-center">
+                                <video id="cameraStream" autoplay playsinline class="border rounded w-100 mb-2" style="max-height: 300px;"></video>
+                                <canvas id="cameraCanvas" class="d-none"></canvas>
+                                <input type="hidden" id="capturedImage" name="capturedImage">
+                                <button type="button" class="btn btn-outline-primary" id="captureBtn">
+                                    <i class="fas fa-camera"></i> Capture Photo
+                                </button>
+                                <img id="capturedPreview" class="mt-2 d-none border rounded" style="max-height:200px;" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="remarks" class="form-label">Remarks</label>
+                            <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Optional remarks..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <span id="submitText">Submit Time In</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <!-- wider for camera -->
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Attendance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-action="UpdateAttendance" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="editAttendanceId" name="attendanceId">
+                    <div class="modal-body">
+                        <div id="editAlertContainer"></div>
+
+                        <!-- Current Proof -->
+                        <div class="mb-3">
+                            <label class="form-label">Current Proof</label>
+                            <div id="currentProofContainer" class="text-center mb-3">
+                                <!-- Proof image will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Upload New Proof -->
+                        <div class="mb-3">
+                            <label for="editProofImage" class="form-label">Upload New Proof Image</label>
+                            <input type="file" class="form-control" id="editProofImage" name="proofImage" accept="image/*">
+                            <small class="text-muted">Leave blank to keep current image</small>
+                        </div>
+
+                        @if(isAbsentToday == false)
+                        {
+                            <!-- OR Capture New Proof -->
+                            <div class="mb-3">
+                                <label class="form-label">Or Capture from Camera</label>
+                                <div class="d-flex flex-column align-items-center">
+                                    <video id="editCameraStream" autoplay playsinline class="border rounded w-100 mb-2" style="max-height: 300px;"></video>
+                                    <canvas id="editCameraCanvas" class="d-none"></canvas>
+                                    <input type="hidden" id="editCapturedImage" name="capturedImage">
+                                    <button type="button" class="btn btn-outline-primary" id="editCaptureBtn">
+                                        <i class="fas fa-camera"></i> Capture Photo
+                                    </button>
+                                    <img id="editCapturedPreview" class="mt-2 d-none border rounded" style="max-height:200px;" />
+                                </div>
+                            </div>
+                        }
+                       
+                        <div class="mb-3">
+                            <label for="editRemarks" class="form-label">Remarks</label>
+                            <textarea class="form-control" id="editRemarks" name="remarks" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="editSubmitText">Save Changes</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="attendanceTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Session</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Status</th>
+                            <th>Late</th>
+                            <th>Rendered</th>
+                            <th>Overtime</th>
+                            <th>Approved By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Where(a => !a.IsDeleted).OrderByDescending(a => a.Date))
+                        {
+                            var timeIn = item.TimeIn?.ToString("h:mm tt") ?? "<span class=\"text-muted small\">No Time-In</span>";
+                            var timeOut = item.TimeOut?.ToString("h:mm tt") ?? "<span class=\"text-muted small  \">No Time-Out</span>";
+
+                            var lateTime = "<span class=\"text-muted small\">No record</span>";
+
+                            if (!item.IsAbsent && item.TimeIn.HasValue)
+                            {
+                                if (item.IsLate > 0)
+                                {
+                                    var lateDuration = TimeSpan.FromMinutes((int)item.IsLate);
+                                    lateTime = $"{(int)lateDuration.TotalHours}h {lateDuration.Minutes}m Late";
+                                }
+                                else
+                                {
+                                    lateTime = "<span class=\"text-success fw-bold\">On Time</span>";
+                                }
+                            }
+
+                            var renderedDisplay = "<span class=\"text-muted small\">No Hours</span>";
+                            if (item.RenderedHours.HasValue && !item.IsAbsent)
+                            {
+                                var rendered = TimeSpan.FromHours((double)item.RenderedHours.Value);
+                                renderedDisplay = $"<span class='badge bg-primary'>{(int)rendered.TotalHours}h {rendered.Minutes}m</span>";
+                            }
+
+                            var overtimeDisplay = "<span class=\"text-muted small\">No Overtime</span>";
+                            if (item.Overtime.HasValue && item.Overtime > 0 && !item.IsAbsent)
+                            {
+                                var ot = TimeSpan.FromHours((double)item.Overtime.Value);
+                                overtimeDisplay = $"<span class='badge bg-warning text-dark'>{(int)ot.TotalHours}h {ot.Minutes}m</span>";
+                            }
+
+                            var statusClass = item.IsAbsent ? "bg-secondary" :
+                            item.ApprovalStatus switch
+                            {
+                                "Approved" => "bg-success",
+                                "Rejected" => "bg-danger",
+                                "Pending" => "bg-warning text-dark",
+                                _ => "bg-secondary"
+                            };
+
+                            var statusText = item.IsAbsent ? "Absent" : item.ApprovalStatus;
+
+                            // Session
+                            var sessionDisplay = "No Session";
+                            if (!item.IsAbsent && !string.IsNullOrEmpty(item.Session))
+                            {
+                                sessionDisplay = item.Session switch
+                                {
+                                    "whole" => "Whole Day",
+                                    "morning" => "Morning",
+                                    "afternoon" => "Afternoon",
+                                    _ => item.Session
+                                };
+                            }
+
+                            <tr>
+                                <td>
+                                    @item.Date.ToString("MMM dd, yyyy")
+                                    <div class="text-muted small">@item.Date.ToString("ddd")</div>
+                                </td>
+
+                                <td>
+                                    @if (item.IsAbsent)
+                                    {
+                                        <span class="text-muted small">No Session</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-dark">@sessionDisplay</span>
+                                    }
+                                </td>
+                                <td>@Html.Raw(item.IsAbsent ? "<span class=\"text-muted small\">No Time-In</span>" : timeIn)</td>
+                                <td>@Html.Raw(item.IsAbsent ? "<span class=\"text-muted small\">No Time-Out</span>" : timeOut)</td>
+                                <td><span class="badge @statusClass">@statusText</span></td>
+                                <td class="@(item.IsLate > 0 ? "text-danger fw-bold" : "text-success")">
+                                    @Html.Raw(lateTime)
+                                </td>
+                                <td>@Html.Raw(renderedDisplay)</td>
+                                <td>@Html.Raw(overtimeDisplay)</td>
+                                <td>
+                                    @if (item.ApprovalStatus == "Approved" && !item.IsAbsent)
+                                    {
+                                        if (item.ApprovedBy != null)
+                                        {
+                                            <small>@item.ApprovedBy.FirstName @item.ApprovedBy.LastName</small> <br />
+                                            <small class="text-muted small">(@item.ApprovedBy.Position)</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Admin</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Not Applicable</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        @if (item.IsAbsent)
+                                        {
+                                            @if (item.Remarks == "Automatically marked absent (no time-in)")
+                                            {
+                                                <span class="text-muted small">No actions</span>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-primary"
+                                                        onclick="openEditModal('@item.AttendanceId', '@item.Remarks?.Replace("'", "\\'")', '')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form asp-action="DeleteAttendance" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="attendanceId" value="@item.AttendanceId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Are you sure you want to delete this record?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        }
+                                        else if (item.ApprovalStatus != "Approved")
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    onclick="openEditModal('@item.AttendanceId', '@item.Remarks?.Replace("'", "\\'")', '@Url.Content($"~/uploads/attendance/{item.ProofImagePath}")')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form asp-action="DeleteAttendance" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="attendanceId" value="@item.AttendanceId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Are you sure you want to delete this record?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else if (item.TimeOut.HasValue)
+                                        {
+                                            <span class="text-muted small">No actions</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No actions</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Session configuration
+        const sessionConfig = {
+            whole: {
+                name: "Whole Day",
+                startTime: "08:00",
+                endTime: "17:00",
+                displayStart: "8:00 AM",
+                displayEnd: "5:00 PM"
+            },
+            morning: {
+                name: "Morning Session",
+                startTime: "08:00",
+                endTime: "12:00",
+                displayStart: "8:00 AM",
+                displayEnd: "12:00 PM"
+            },
+            afternoon: {
+                name: "Afternoon Session",
+                startTime: "13:00",
+                endTime: "17:00",
+                displayStart: "1:00 PM",
+                displayEnd: "5:00 PM"
+            }
+        };
+
+        // Update current time every second
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+
+            const timeString = `${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`;
+            if (document.getElementById('currentTimeDisplay'))
+                document.getElementById('currentTimeDisplay').textContent = timeString;
+            if (document.getElementById('modalCurrentTime'))
+                document.getElementById('modalCurrentTime').textContent = timeString.replace(/:\d{2} /, ' ');
+        }
+
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
+
+        // Session type change handler
+        document.getElementById('sessionType').addEventListener('change', function () {
+            const sessionType = this.value;
+            const sessionInfoAlert = document.getElementById('sessionInfoAlert');
+            const sessionInfo = document.getElementById('sessionInfo');
+
+            if (sessionType && sessionConfig[sessionType]) {
+                const config = sessionConfig[sessionType];
+                sessionInfo.innerHTML = `
+                    <strong>${config.name}:</strong> ${config.displayStart} - ${config.displayEnd}<br>
+                    <small class="text-muted">You can time in starting from ${config.displayStart}</small>
+                `;
+                sessionInfoAlert.style.display = 'block';
+            } else {
+                sessionInfoAlert.style.display = 'none';
+            }
+        });
+
+        // Time In Button Click
+        document.getElementById('timeInBtn').addEventListener('click', function () {
+            $('#timeInModal').modal('show');
+        });
+
+        // Form submission validation
+        document.querySelector('#timeInModal form').addEventListener('submit', function (e) {
+            const sessionType = document.getElementById('sessionType').value;
+
+            if (!sessionType) {
+                e.preventDefault();
+                alert('Please select a session type.');
+                return;
+            }
+
+            const config = sessionConfig[sessionType];
+            if (!config) {
+                e.preventDefault();
+                alert('Invalid session type selected.');
+                return;
+            }
+
+            // Time validation
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+
+            const [startHour, startMinute] = config.startTime.split(':').map(Number);
+            const [endHour, endMinute] = config.endTime.split(':').map(Number);
+
+            if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
+                e.preventDefault();
+                alert(`You cannot time in before ${config.displayStart} for ${config.name}.`);
+                return;
+            }
+
+            if (currentHour > endHour || (currentHour === endHour && currentMinute >= endMinute)) {
+                e.preventDefault();
+                alert(`Cannot time in after ${config.displayEnd} for ${config.name}.`);
+                return;
+            }
+        });
+
+        // Time Out Button Click
+        document.getElementById('timeOutBtn').addEventListener('click', function () {
+            if (confirm('Are you sure you want to time out?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Intern/TimeOut';
+
+                const token = document.createElement('input');
+                token.type = 'hidden';
+                token.name = '__RequestVerificationToken';
+                token.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                form.appendChild(token);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+
+        // Edit Modal
+        function openEditModal(id, remarks, proofUrl) {
+            $('#editAttendanceId').val(id);
+            $('#editRemarks').val(remarks);
+
+            const proofContainer = $('#currentProofContainer');
+            if (proofUrl) {
+                proofContainer.html(
+                    `<a href="${proofUrl}" target="_blank">
+                        <img src="${proofUrl}" class="img-thumbnail" style="max-height: 200px;">
+                     </a>`
+                );
+                $('#editProofImage').closest('.mb-3').show();
+            } else {
+                proofContainer.html('<div class="text-muted">No proof image required for absence</div>');
+                $('#editProofImage').closest('.mb-3').hide();
+            }
+
+            $('#editModal').modal('show');
+        }
+
+        let stream;
+
+        async function initCamera(modalId, videoId, captureBtnId, fileInputId, previewId) {
+            const video = document.getElementById(videoId);
+            const captureBtn = document.getElementById(captureBtnId);
+            const fileInput = document.getElementById(fileInputId);
+            const preview = document.getElementById(previewId);
+
+            // Open camera when modal is shown
+            $(`#${modalId}`).on('shown.bs.modal', async () => {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                } catch (err) {
+                    console.error("Camera access denied:", err);
+                }
+            });
+
+            // Stop camera when modal closes
+            $(`#${modalId}`).on('hidden.bs.modal', () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                video.srcObject = null;
+            });
+
+            // Capture image
+            captureBtn.addEventListener('click', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+
+                canvas.toBlob(blob => {
+                    const file = new File([blob], "captured.png", { type: "image/png" });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // Show preview
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    img.classList.add("img-thumbnail", "mt-2");
+                    img.style.maxHeight = "200px";
+                    preview.innerHTML = "";
+                    preview.appendChild(img);
+                }, "image/png");
+            });
+        }
+
+        // Initialize camera for both modals
+        initCamera("timeInModal", "cameraStream", "captureBtn", "proofImage", "previewContainer");
+        initCamera("editModal", "editCameraStream", "editCaptureBtn", "editProofImage", "editPreviewContainer");
+    </script>
+}

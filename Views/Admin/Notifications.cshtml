@@ -1,0 +1,519 @@
+﻿@model List<IMS.Models.Notification>
+
+@{
+    ViewData["Title"] = "Notifications";
+    bool showDeleted = ViewBag.ShowDeleted ?? false;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0 me-3">
+                <i class="fas fa-bell text-primary me-2"></i>Notifications
+                @if (showDeleted)
+                {
+                    <span class="ms-2 badge bg-warning">Trash</span>
+                }
+            </h2>
+            @if (!showDeleted)
+            {
+                <span class="badge bg-danger rounded-pill p-2" id="unreadCount">
+                    @ViewBag.UnreadCount Unread
+                </span>
+            }
+        </div>
+        <div>
+            @if (!showDeleted)
+            {
+                <button class="btn btn-sm btn-outline-success me-2" id="markAllBtn">
+                    <i class="fas fa-check-double me-1"></i>Mark All as Read
+                </button>
+                <button class="btn btn-sm btn-outline-danger" id="clearAllBtn">
+                    <i class="fas fa-trash-alt me-1"></i>Move All to Trash
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-outline-danger me-2" id="emptyTrashBtn">
+                    <i class="fas fa-broom me-1"></i>Empty Trash
+                </button>
+            }
+            <button class="btn btn-sm @(showDeleted ? "btn-info" : "btn-outline-info") ms-2" id="toggleDeletedBtn">
+                <i class="fas @(showDeleted ? "fa-inbox" : "fa-trash-restore") me-1"></i>@(showDeleted ? "Back to Inbox" : "View Trash")
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label">Filter by Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="all">All Notifications</option>
+                        <option value="unread">Unread Only</option>
+                        <option value="read">Read Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort by</label>
+                    <select class="form-select" id="sortFilter">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search notifications...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div id="notificationList">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var notification in Model)
+                    {
+                        <div class="notification-item p-3 border-bottom @(notification.IsRead && !showDeleted ? "" : "bg-light-unread") @(showDeleted ? "deleted-notification" : "")"
+                             data-id="@notification.NotificationId" data-read="@notification.IsRead.ToString().ToLower()"
+                             data-date="@notification.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")">
+
+                            <div class="d-flex align-items-start">
+                                <!-- Status indicator -->
+                                <div class="me-3 mt-1">
+                                    @if (!notification.IsRead && !showDeleted)
+                                    {
+                                        <span class="badge bg-danger rounded-circle p-1" title="Unread"></span>
+                                    }
+                                    else if (notification.IsRead && !showDeleted)
+                                    {
+                                        <i class="fas fa-check-circle text-success" title="Read"></i>
+                                    }
+                                    else if (showDeleted)
+                                    {
+                                        <i class="fas fa-trash-alt text-danger" title="Deleted"></i>
+                                    }
+                                </div>
+
+                                <!-- Notification content -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <h6 class="mb-0 fw-bold">@notification.Title</h6>
+                                        <small class="text-muted">
+                                            <i class="far fa-clock me-1"></i>
+                                            @notification.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                                            @if (showDeleted)
+                                            {
+                                                <br />
+                                                <i class="fas fa-trash me-1"></i>
+                                                <span>Deleted @notification.DeletedAt?.ToString("MMM dd, yyyy")</span>
+                                            }
+                                        </small>
+                                    </div>
+                                    <p class="mb-2 text-muted">@notification.Message</p>
+
+                                    @if (!string.IsNullOrEmpty(notification.Link) && !showDeleted)
+                                    {
+                                        <a href="@notification.Link" class="btn btn-sm btn-primary view-details" data-id="@notification.NotificationId">
+                                            <i class="fas fa-external-link-alt me-1"></i>View Details
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="d-flex justify-content-end mt-2">
+                                @if (!showDeleted)
+                                {
+                                    if (!notification.IsRead)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success me-2 mark-read">
+                                            <i class="fas fa-check me-1"></i>Mark as Read
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-secondary delete-notification">
+                                        <i class="fas fa-trash-alt me-1"></i>Move to Trash
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-success me-2 restore-notification">
+                                        <i class="fas fa-undo me-1"></i>Restore
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger permanent-delete">
+                                        <i class="fas fa-times-circle me-1"></i>Delete Permanently
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">
+                            @(showDeleted ? "Trash is empty." : "No notifications yet.")
+                        </p>
+                        <small class="text-muted">
+                            @(showDeleted ? "Notifications you delete will appear here." : "We'll notify you when something arrives.")
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-bell me-2 text-primary"></i>
+            <strong class="me-auto">Notification</strong>
+            <small>Just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<style>
+    .bg-light-unread {
+        background-color: rgba(13, 110, 253, 0.05) !important;
+        border-left: 4px solid #0d6efd !important;
+    }
+
+    .deleted-notification {
+        background-color: rgba(220, 53, 69, 0.05) !important;
+        border-left: 4px solid #dc3545 !important;
+        opacity: 0.9;
+    }
+
+    .notification-item {
+        transition: all 0.2s ease;
+    }
+
+        .notification-item:hover {
+            background-color: #f8f9fa !important;
+            transform: translateY(-1px);
+        }
+
+    .badge.rounded-circle {
+        width: 12px;
+        height: 12px;
+    }
+
+    .notification-priority-high {
+        border-left: 4px solid #dc3545 !important;
+    }
+
+    .notification-priority-medium {
+        border-left: 4px solid #ffc107 !important;
+    }
+
+    .notification-priority-low {
+        border-left: 4px solid #0dcaf0 !important;
+    }
+
+    .empty-state {
+        display: none;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Toast function for user feedback
+        function showToast(message, type = 'info') {
+            const toastEl = document.getElementById('liveToast');
+            const toastBody = toastEl.querySelector('.toast-body');
+            const toast = new bootstrap.Toast(toastEl);
+
+            // Set appropriate icon and color based on type
+            let icon, bgColor;
+            switch(type) {
+                case 'success':
+                    icon = '<i class="fas fa-check-circle text-success me-2"></i>';
+                    toastEl.querySelector('.toast-header').classList.remove('bg-info', 'bg-warning', 'bg-danger');
+                    toastEl.querySelector('.toast-header').classList.add('bg-success', 'text-white');
+                    break;
+                case 'error':
+                    icon = '<i class="fas fa-exclamation-circle text-danger me-2"></i>';
+                    toastEl.querySelector('.toast-header').classList.remove('bg-info', 'bg-warning', 'bg-success');
+                    toastEl.querySelector('.toast-header').classList.add('bg-danger', 'text-white');
+                    break;
+                case 'warning':
+                    icon = '<i class="fas fa-exclamation-triangle text-warning me-2"></i>';
+                    toastEl.querySelector('.toast-header').classList.remove('bg-info', 'bg-success', 'bg-danger');
+                    toastEl.querySelector('.toast-header').classList.add('bg-warning');
+                    break;
+                default:
+                    icon = '<i class="fas fa-info-circle text-info me-2"></i>';
+                    toastEl.querySelector('.toast-header').classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                    toastEl.querySelector('.toast-header').classList.add('bg-info', 'text-white');
+            }
+
+            toastBody.innerHTML = icon + message;
+            toast.show();
+        }
+
+        // Mark single notification as read when "View Details" is clicked
+        $(document).on('click', '.view-details', function (e) {
+            var notificationId = $(this).data('id');
+            var notificationItem = $(this).closest('.notification-item');
+
+            // Only mark as read if it's currently unread
+            if (notificationItem.hasClass('bg-light-unread')) {
+                $.post('@Url.Action("MarkAsRead", "Admin")', { id: notificationId })
+                    .done(function () {
+                        // Update UI
+                        notificationItem.removeClass('bg-light-unread');
+                        notificationItem.find('.badge.rounded-circle').replaceWith('<i class="fas fa-check-circle text-success" title="Read"></i>');
+                        notificationItem.find('.mark-read').remove();
+                        notificationItem.attr('data-read', 'true');
+
+                        // Update counter
+                        updateNotificationCount(-1);
+                    })
+                    .fail(function() {
+                        showToast('Failed to mark as read', 'error');
+                    });
+            }
+        });
+
+        // Mark single notification as read
+        $(document).on('click', '.mark-read', function () {
+            var button = $(this);
+            var notificationItem = button.closest('.notification-item');
+            var notificationId = notificationItem.data('id');
+
+            $.post('@Url.Action("MarkAsRead", "Admin")', { id: notificationId })
+                .done(function () {
+                    // Update UI
+                    notificationItem.removeClass('bg-light-unread');
+                    notificationItem.find('.badge.rounded-circle').replaceWith('<i class="fas fa-check-circle text-success" title="Read"></i>');
+                    button.remove();
+                    notificationItem.attr('data-read', 'true');
+
+                    // Update counter
+                    updateNotificationCount(-1);
+
+                    // Show feedback
+                    showToast('Notification marked as read', 'success');
+                })
+                .fail(function() {
+                    showToast('Failed to mark as read', 'error');
+                });
+        });
+
+        // Soft delete single notification
+        $(document).on('click', '.delete-notification', function () {
+            if (!confirm("Are you sure you want to move this notification to trash?")) return;
+
+            var notificationItem = $(this).closest('.notification-item');
+            var notificationId = notificationItem.data('id');
+            var wasUnread = notificationItem.hasClass('bg-light-unread');
+
+            $.post('@Url.Action("SoftDeleteNotification", "Admin")', { id: notificationId })
+                .done(function () {
+                    notificationItem.slideUp(300, function() {
+                        $(this).remove();
+
+                        // Update counter if it was unread
+                        if (wasUnread) {
+                            updateNotificationCount(-1);
+                        }
+
+                        showToast('Notification moved to trash', 'success');
+
+                        // Check if list is now empty
+                        if ($('#notificationList .notification-item').length === 0) {
+                            $('#notificationList').html('<div class="text-center py-5"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><p class="text-muted">No notifications yet.</p><small class="text-muted">We\'ll notify you when something arrives.</small></div>');
+                        }
+                    });
+                })
+                .fail(function() {
+                    showToast('Failed to move to trash', 'error');
+                });
+        });
+
+        // Restore a deleted notification
+        $(document).on('click', '.restore-notification', function () {
+            var notificationItem = $(this).closest('.notification-item');
+            var notificationId = notificationItem.data('id');
+
+            $.post('@Url.Action("RestoreNotification", "Admin")', { id: notificationId })
+                .done(function () {
+                    notificationItem.slideUp(300, function() {
+                        $(this).remove();
+                        showToast('Notification restored', 'success');
+
+                        // Check if list is now empty
+                        if ($('#notificationList .notification-item').length === 0) {
+                            $('#notificationList').html('<div class="text-center py-5"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><p class="text-muted">Trash is empty.</p><small class="text-muted">Notifications you delete will appear here.</small></div>');
+                        }
+                    });
+                })
+                .fail(function() {
+                    showToast('Failed to restore notification', 'error');
+                });
+        });
+
+        // Permanently delete a notification
+        $(document).on('click', '.permanent-delete', function () {
+            if (!confirm("Are you sure you want to permanently delete this notification? This action cannot be undone.")) return;
+
+            var notificationItem = $(this).closest('.notification-item');
+            var notificationId = notificationItem.data('id');
+
+            $.post('@Url.Action("PermanentDeleteNotification", "Admin")', { id: notificationId })
+                .done(function () {
+                    notificationItem.slideUp(300, function() {
+                        $(this).remove();
+                        showToast('Notification permanently deleted', 'success');
+
+                        // Check if list is now empty
+                        if ($('#notificationList .notification-item').length === 0) {
+                            $('#notificationList').html('<div class="text-center py-5"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><p class="text-muted">Trash is empty.</p><small class="text-muted">Notifications you delete will appear here.</small></div>');
+                        }
+                    });
+                })
+                .fail(function() {
+                    showToast('Failed to delete notification', 'error');
+                });
+        });
+
+        // Mark all as read
+        $('#markAllBtn').click(function () {
+            $.post('@Url.Action("MarkAllAsRead", "Admin")')
+                .done(function () {
+                    $('.notification-item').removeClass('bg-light-unread');
+                    $('.badge.rounded-circle').replaceWith('<i class="fas fa-check-circle text-success" title="Read"></i>');
+                    $('.mark-read').remove();
+                    $('.notification-item').attr('data-read', 'true');
+
+                    // Update counter
+                    $('#unreadCount').text("0 Unread");
+                    $('#unreadCount').removeClass('bg-danger').addClass('bg-secondary');
+
+                    showToast('All notifications marked as read', 'success');
+                })
+                .fail(function() {
+                    showToast('Failed to mark all as read', 'error');
+                });
+        });
+
+        // Move all notifications to trash
+        $('#clearAllBtn').click(function () {
+            if (!confirm("Are you sure you want to move all notifications to trash?")) return;
+
+            $.post('@Url.Action("SoftDeleteAllNotifications", "Admin")')
+                .done(function () {
+                    $('#notificationList').html('<div class="text-center py-5"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><p class="text-muted">No notifications yet.</p><small class="text-muted">We\'ll notify you when something arrives.</small></div>');
+                    $('#unreadCount').text("0 Unread");
+                    $('#unreadCount').removeClass('bg-danger').addClass('bg-secondary');
+
+                    showToast('All notifications moved to trash', 'success');
+                })
+                .fail(function() {
+                    showToast('Failed to move notifications to trash', 'error');
+                });
+        });
+
+        // Empty trash (permanently delete all)
+        $('#emptyTrashBtn').click(function () {
+            if (!confirm("Are you sure you want to permanently delete ALL notifications in trash? This action cannot be undone.")) return;
+
+            $.post('@Url.Action("PermanentDeleteAllNotifications", "Admin")')
+                .done(function (response) {
+                    $('#notificationList').html('<div class="text-center py-5"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><p class="text-muted">Trash is empty.</p><small class="text-muted">Notifications you delete will appear here.</small></div>');
+
+                    showToast('All notifications permanently deleted (' + response.deletedCount + ' items removed)', 'success');
+                })
+                .fail(function() {
+                    showToast('Failed to empty trash', 'error');
+                });
+        });
+
+        // Toggle between inbox and trash
+        $('#toggleDeletedBtn').click(function() {
+            window.location.href = '@Url.Action("Notifications", "Admin")' + '?showDeleted=' + @((showDeleted ? "false" : "true"));
+        });
+
+        // Live filtering without apply button
+        function applyFilters() {
+            const statusFilter = $('#statusFilter').val();
+            const sortOrder = $('#sortFilter').val();
+            const searchText = $('#searchInput').val().toLowerCase();
+
+            $('.notification-item').each(function() {
+                const isRead = $(this).attr('data-read') === 'true';
+                const titleText = $(this).find('h6').text().toLowerCase();
+                const messageText = $(this).find('p').text().toLowerCase();
+                const matchesSearch = searchText === '' ||
+                                    titleText.includes(searchText) ||
+                                    messageText.includes(searchText);
+
+                let matchesStatus = true;
+                if (statusFilter === 'unread') matchesStatus = !isRead;
+                if (statusFilter === 'read') matchesStatus = isRead;
+
+                if (matchesStatus && matchesSearch) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+
+            // Apply sorting
+            const notifications = $('.notification-item:visible').get();
+            notifications.sort(function(a, b) {
+                const dateA = new Date($(a).data('date'));
+                const dateB = new Date($(b).data('date'));
+                return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+            });
+
+            $.each(notifications, function(idx, item) {
+                $('#notificationList').append(item);
+            });
+        }
+
+        // Set up live filtering
+        $('#statusFilter, #sortFilter').change(applyFilters);
+        $('#searchInput').on('input', applyFilters);
+
+        // Update unread count badge
+        function updateNotificationCount(change) {
+            var countText = $('#unreadCount').text();
+            var currentCount = parseInt(countText) || 0;
+            var newCount = Math.max(0, currentCount + change);
+
+            $('#unreadCount').text(newCount + " Unread");
+
+            // Update badge appearance if count reaches zero
+            if (newCount === 0) {
+                $('#unreadCount').removeClass('bg-danger').addClass('bg-secondary');
+            } else if (currentCount === 0 && newCount > 0) {
+                $('#unreadCount').removeClass('bg-secondary').addClass('bg-danger');
+            }
+        }
+
+        // Initialize with some example data if needed
+        $(document).ready(function() {
+            // Check if we have any notifications
+            if ($('.notification-item').length === 0) {
+                $('#markAllBtn, #clearAllBtn').prop('disabled', true);
+            }
+
+            // Apply filters on page load
+            applyFilters();
+        });
+    </script>
+}

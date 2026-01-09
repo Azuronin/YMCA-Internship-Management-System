@@ -1,0 +1,723 @@
+﻿@model List<IMS.Models.Applicants>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Applications";
+    var docs = ViewBag.Documents as List<IMS.Models.Documents>;
+    var msg = Context.Request.Query["msg"].ToString();
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="~/css/Admin/applications.css" />
+<script src="~/js/Admin/application.js"></script>
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        alert("@msg");
+    </script>
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-alt me-2"></i>Application Management</h2>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-primary me-2" id="applicantCount">@Model.Count Applicants</span>
+            <span class="badge bg-info" id="documentCount">@docs.Count Documents</span>
+        </div>
+    </div>
+
+    <!-- View Selection Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card view-card active" id="applicantsCard" data-view="applicants">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-graduate fa-3x mb-3 text-primary"></i>
+                    <h5 class="card-title">Applicants</h5>
+                    <p class="card-text">Manage applicant resumes</p>
+                    <span class="badge bg-primary">@Model.Count Files</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card view-card" id="documentsCard" data-view="documents">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-contract fa-3x mb-3 text-info"></i>
+                    <h5 class="card-title">Documents</h5>
+                    <p class="card-text">Review Intern documents</p>
+                    <span class="badge bg-info">@docs.Count Files</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search Bar -->
+    <div class="filter-bar card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4 mb-2 mb-md-0">
+                    <label for="searchInput" class="form-label"><i class="fas fa-search me-1"></i>Search:</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, type, or uploader..." />
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0" id="statusFilterContainer" style="display: none;">
+                    <label for="statusFilter" class="form-label"><i class="fas fa-filter me-1"></i>Status:</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                    <label for="dateFilter" class="form-label"><i class="fas fa-calendar me-1"></i>Date:</label>
+                    <input type="date" id="dateFilter" class="form-control" />
+                </div>
+                <div class="col-md-2 text-md-end">
+                    <button id="clearFilters" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applicants Table -->
+    <div class="table-container" id="applicantsTable">
+        <div class="table-header">
+            <h4><i class="fas fa-user-graduate me-2 text-primary"></i>Applicant Resumes</h4>
+            <div class="table-actions">
+                <span class="me-2">@Model.Count files</span>
+                <button class="btn btn-sm btn-outline-secondary" id="toggleApplicantSearch">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-search mb-3" id="applicantSearch" style="display: none;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search applicants..." id="applicantSearchInput">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        @* <th>Full Name</th>
+                        <th>Email</th> *@
+                        <th>File Name <button class="sort-btn" data-sort="name"><i class="fas fa-sort"></i></button></th>
+                        <th>Upload Date <button class="sort-btn" data-sort="date"><i class="fas fa-sort"></i></button></th>
+                        @* <th>Status</th> *@
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        var filePath = Url.Content(a.FilePath);
+                        <tr class="app-row" data-name="@a.FileName.ToLower()" data-date="@a.UploadDate.ToString("yyyy-MM-dd")">
+                            <td>@a.FullName</td>
+                            <td>@a.Email</td>
+                            <td data-label="File Name">
+                                <div class="file-info">
+                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                    <span>@a.FileName</span>
+                                </div>
+                            </td>
+                            <td data-label="Upload Date">@a.UploadDate.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <span class="badge
+                                @(a.Status == "Qualified" ? "bg-success" :
+                                a.Status == "Rejected" ? "bg-danger" : "bg-secondary")">
+                                    @a.Status
+                                </span>
+                            </td>
+                            <td data-label="Actions">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="@filePath" target="_blank" class="btn btn-outline-primary" title="View" >
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                   @*  @if (a.Status == "Pending")
+                                    {
+                                        <form method="post"  asp-controller="Admin" asp-action="QualifyApplicant" style="display:inline;">
+                                            <input type="hidden" name="id" value="@a.ApplicantId" />
+                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Mark as Qualified">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+
+                                        <form method="post"  asp-controller="Admin" asp-action="RejectApplicant" style="display:inline;">
+                                            <input type="hidden" name="id" value="@a.ApplicantId" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Reject Applicant">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    } *@
+
+                                    <form method="post" asp-controller="Admin" asp-action="DeleteResume" onsubmit="return confirm('Are you sure you want to delete this resume?');" style="display:inline;">
+                                        <input type="hidden" name="id" value="@a.ApplicantId" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <i class="fas fa-folder-open fa-3x mb-3 text-muted"></i>
+                <h5>No applicant resumes found</h5>
+                <p>When applicants submit resumes, they will appear here.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Documents Table -->
+    <div class="table-container d-none" id="documentsTable">
+        <div class="table-header">
+            <h4><i class="fas fa-file-contract me-2 text-info"></i>Intern Documents</h4>
+            <div class="table-actions">
+                <span class="me-2">@docs.Count files</span>
+                <button class="btn btn-sm btn-outline-secondary" id="toggleDocumentSearch">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-search mb-3" id="documentSearch" style="display: none;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search documents..." id="documentSearchInput">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Type <button class="sort-btn" data-sort="type"><i class="fas fa-sort"></i></button></th>
+                        <th>File Name <button class="sort-btn" data-sort="name"><i class="fas fa-sort"></i></button></th>
+                        <th>Uploaded By <button class="sort-btn" data-sort="uploader"><i class="fas fa-sort"></i></button></th>
+                        <th>Upload Date <button class="sort-btn" data-sort="date"><i class="fas fa-sort"></i></button></th>
+                        <th>Status <button class="sort-btn" data-sort="status"><i class="fas fa-sort"></i></button></th>
+                        <th>Assigned By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in docs)
+                    {
+                        var docPath = Url.Content(doc.FilePath);
+                        <tr class="doc-row"
+                            data-name="@doc.FileName.ToLower()"
+                            data-type="@doc.DocumentType.ToLower()"
+                            data-uploader="@(doc.User != null ? $"{doc.User.FirstName} {doc.User.MiddleName} {doc.User.LastName}".ToLower() : "")"
+                            data-date="@doc.UploadDate.ToString("yyyy-MM-dd")"
+                            data-status="@doc.Status.ToLower()">
+                            <td data-label="Type">
+                                <span class="document-type">@doc.DocumentType</span>
+                            </td>
+                            <td data-label="File Name">
+                                <div class="file-info">
+                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                    <span>@doc.FileName</span>
+                                </div>
+                            </td>
+                            <td data-label="Uploaded By">@doc.User?.FirstName @doc.User?.MiddleName @doc.User?.LastName</td>
+                            <td data-label="Upload Date">@doc.UploadDate.ToString("MMM dd, yyyy")</td>
+                            <td data-label="Status">
+                                <span class="badge status-badge @(doc.Status.ToLower())">
+                                    @if (doc.Status == "Pending")
+                                    {
+                                        <i class="fas fa-clock me-1"></i>
+                                    }
+                                    else if (doc.Status == "Approved")
+                                    {
+                                        <i class="fas fa-check me-1"></i>
+                                    }
+                                    else if (doc.Status == "Rejected")
+                                    {
+                                        <i class="fas fa-times me-1"></i>
+                                    }
+                                    @doc.Status
+                                </span>
+                            </td>
+                            <td data-label="@(doc.Status == "Rejected" ? "Rejected By" : "Approved By")">
+                                @if (doc.Status == "Approved" || doc.Status == "Rejected")
+                                {
+                                    if (doc.ApprovedBy != null)
+                                    {
+                                        <span class="approver-info">
+                                            @($"{doc.ApprovedBy.FirstName} {doc.ApprovedBy.LastName} ({doc.ApprovedBy.Position})")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Admin</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">--</span>
+                                }
+                            </td>
+                            <td data-label="Actions">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="@docPath" target="_blank" class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="@Url.Action("DownloadDocument", "Admin", new { id = doc.DocumentId })" class="btn btn-outline-success" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    @if (doc.Status == "Pending")
+                                    {
+                                        <form method="post" asp-controller="Admin" asp-action="ApproveDocument">
+                                            <input type="hidden" name="id" value="@doc.DocumentId" />
+                                            <button type="submit" class="btn btn-outline-success" title="Approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-controller="Admin" asp-action="RejectDocument" onsubmit="return confirm('Reject this document?');">
+                                            <input type="hidden" name="id" value="@doc.DocumentId" />
+                                            <button type="submit" class="btn btn-outline-warning" title="Reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (doc.Status == "Approved")
+                                    {
+                                        <form method="post" asp-controller="Admin" asp-action="RejectDocument" onsubmit="return confirm('Reject approved document?');">
+                                            <input type="hidden" name="id" value="@doc.DocumentId" />
+                                            <button type="submit" class="btn btn-outline-warning" title="Reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (doc.Status == "Rejected")
+                                    {
+                                        <form method="post" asp-controller="Admin" asp-action="ApproveDocument">
+                                            <input type="hidden" name="id" value="@doc.DocumentId" />
+                                            <button type="submit" class="btn btn-outline-success" title="Approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-controller="Admin" asp-action="DeleteDocument" onsubmit="return confirm('Delete rejected document permanently?');">
+                                            <input type="hidden" name="id" value="@doc.DocumentId" />
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!docs.Any())
+        {
+            <div class="empty-state">
+                <i class="fas fa-folder-open fa-3x mb-3 text-muted"></i>
+                <h5>No documents found</h5>
+                <p>When interns upload documents, they will appear here.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal Viewer -->
+<div class="modal fade" id="pdfModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">File Preview</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <iframe id="fileViewerPdf" width="100%" height="600" style="display: none; border: none;"></iframe>
+                <img id="fileViewerImage" class="img-fluid" style="display: none; max-height: 600px;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .view-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        height: 100%;
+        border-radius: 12px;
+    }
+
+        .view-card:hover, .view-card.active {
+            border-color: #0d6efd;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+            .view-card.active .card-body {
+                background-color: rgba(13, 110, 253, 0.05);
+            }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        background: linear-gradient(to right, #f8f9fa, #f1f5f9);
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-search {
+        padding: 0 1.5rem;
+    }
+
+    .table-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .user-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .user-table th {
+            background-color: #f1f5f9;
+            padding: 1rem;
+            font-weight: 600;
+            position: relative;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .user-table td {
+            padding: 1.25rem 1rem;
+            vertical-align: middle;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .user-table tbody tr {
+            transition: background-color 0.2s;
+        }
+
+            .user-table tbody tr:hover {
+                background-color: rgba(13, 110, 253, 0.03);
+            }
+
+    .sort-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        margin-left: 0.25rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+        .sort-btn:hover {
+            color: #0d6efd;
+        }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5em 0.8em;
+        font-size: 0.8em;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+
+        .status-badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.approved {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-badge.rejected {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+    .document-type {
+        background-color: #e9ecef;
+        padding: 0.35rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #6c757d;
+    }
+
+    .filter-bar {
+        margin-bottom: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+    }
+
+    .btn-group-sm > .btn, .btn-sm {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.8rem;
+        border-radius: 6px;
+    }
+
+    .approver-info {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .table-search {
+        transition: all 0.3s ease;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between applicants and documents views
+        const applicantsCard = document.getElementById('applicantsCard');
+        const documentsCard = document.getElementById('documentsCard');
+        const applicantsTable = document.getElementById('applicantsTable');
+        const documentsTable = document.getElementById('documentsTable');
+        const statusFilterContainer = document.getElementById('statusFilterContainer');
+
+        function switchView(view) {
+            if (view === 'applicants') {
+                applicantsCard.classList.add('active');
+                documentsCard.classList.remove('active');
+                applicantsTable.classList.remove('d-none');
+                documentsTable.classList.add('d-none');
+                statusFilterContainer.style.display = 'none';
+            } else {
+                applicantsCard.classList.remove('active');
+                documentsCard.classList.add('active');
+                applicantsTable.classList.add('d-none');
+                documentsTable.classList.remove('d-none');
+                statusFilterContainer.style.display = 'block';
+            }
+            // Clear filters when switching views
+            clearFilters.click();
+        }
+
+        applicantsCard.addEventListener('click', () => switchView('applicants'));
+        documentsCard.addEventListener('click', () => switchView('documents'));
+
+        // Toggle search boxes
+        document.getElementById('toggleApplicantSearch').addEventListener('click', function() {
+            const searchBox = document.getElementById('applicantSearch');
+            searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
+            if (searchBox.style.display === 'block') {
+                document.getElementById('applicantSearchInput').focus();
+            }
+        });
+
+        document.getElementById('toggleDocumentSearch').addEventListener('click', function() {
+            const searchBox = document.getElementById('documentSearch');
+            searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
+            if (searchBox.style.display === 'block') {
+                document.getElementById('documentSearchInput').focus();
+            }
+        });
+        function updateStatus(id, status) {
+            if (!confirm(`Are you sure you want to mark this applicant as ${status}?`)) return;
+
+            fetch('@Url.Action("UpdateStatus", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    id: id,
+                    status: status
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    location.reload();
+                }
+            })
+            .catch(err => console.error(err));
+        }
+        // Filter functionality
+        const searchInput = document.getElementById('searchInput');
+        const applicantSearchInput = document.getElementById('applicantSearchInput');
+        const documentSearchInput = document.getElementById('documentSearchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const clearFilters = document.getElementById('clearFilters');
+
+        function filterRows() {
+            const currentView = applicantsTable.classList.contains('d-none') ? 'documents' : 'applicants';
+            const searchTerm = searchInput.value.toLowerCase();
+            const tableSearchTerm = currentView === 'applicants'
+                ? (applicantSearchInput.value.toLowerCase() || searchTerm)
+                : (documentSearchInput.value.toLowerCase() || searchTerm);
+            const statusValue = statusFilter.value;
+            const dateValue = dateFilter.value;
+
+            const rows = currentView === 'applicants'
+                ? document.querySelectorAll('.app-row')
+                : document.querySelectorAll('.doc-row');
+
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                let show = true;
+
+                // Search filter
+                if (tableSearchTerm) {
+                    const name = row.getAttribute('data-name');
+                    const type = row.getAttribute('data-type') || '';
+                    const uploader = row.getAttribute('data-uploader') || '';
+
+                    if (!name.includes(tableSearchTerm) &&
+                        !type.includes(tableSearchTerm) &&
+                        !uploader.includes(tableSearchTerm)) {
+                        show = false;
+                    }
+                }
+
+                // Status filter (only for documents)
+                if (statusValue && show && currentView === 'documents') {
+                    const status = row.getAttribute('data-status') || '';
+                    if (status !== statusValue) {
+                        show = false;
+                    }
+                }
+
+                // Date filter
+                if (dateValue && show) {
+                    const date = row.getAttribute('data-date');
+                    if (date && !date.startsWith(dateValue)) {
+                        show = false;
+                    }
+                }
+
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            // Update count badges
+            if (currentView === 'applicants') {
+                document.querySelector('#applicantsTable .table-actions span').textContent = `${visibleCount} files`;
+            } else {
+                document.querySelector('#documentsTable .table-actions span').textContent = `${visibleCount} files`;
+            }
+        }
+
+        // Add event listeners for all filter inputs
+        const filterInputs = [searchInput, applicantSearchInput, documentSearchInput, statusFilter, dateFilter];
+        filterInputs.forEach(input => {
+            if (input) {
+                input.addEventListener('input', filterRows);
+                input.addEventListener('change', filterRows);
+            }
+        });
+
+        clearFilters.addEventListener('click', () => {
+            searchInput.value = '';
+            applicantSearchInput.value = '';
+            documentSearchInput.value = '';
+            statusFilter.value = '';
+            dateFilter.value = '';
+            filterRows();
+        });
+
+        // Sort functionality
+        const sortButtons = document.querySelectorAll('.sort-btn');
+        sortButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const sortType = this.getAttribute('data-sort');
+                const currentView = applicantsTable.classList.contains('d-none') ? 'documents' : 'applicants';
+                const rows = Array.from(currentView === 'applicants'
+                    ? document.querySelectorAll('.app-row:not([style*="display: none"])')
+                    : document.querySelectorAll('.doc-row:not([style*="display: none"])'));
+
+                // Determine sort direction
+                const currentDir = this.getAttribute('data-dir') || 'asc';
+                const newDir = currentDir === 'asc' ? 'desc' : 'asc';
+                this.setAttribute('data-dir', newDir);
+
+                // Update icon
+                const icon = this.querySelector('i');
+                icon.className = newDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+
+                // Reset other sort buttons
+                document.querySelectorAll('.sort-btn').forEach(btn => {
+                    if (btn !== this) {
+                        btn.setAttribute('data-dir', 'asc');
+                        btn.querySelector('i').className = 'fas fa-sort';
+                    }
+                });
+
+                // Sort rows
+                rows.sort((a, b) => {
+                    let aValue, bValue;
+
+                    switch(sortType) {
+                        case 'name':
+                            aValue = a.getAttribute('data-name');
+                            bValue = b.getAttribute('data-name');
+                            break;
+                        case 'date':
+                            aValue = new Date(a.getAttribute('data-date'));
+                            bValue = new Date(b.getAttribute('data-date'));
+                            break;
+                        case 'type':
+                            aValue = a.getAttribute('data-type');
+                            bValue = b.getAttribute('data-type');
+                            break;
+                        case 'uploader':
+                            aValue = a.getAttribute('data-uploader');
+                            bValue = b.getAttribute('data-uploader');
+                            break;
+                        case 'status':
+                            aValue = a.getAttribute('data-status');
+                            bValue = b.getAttribute('data-status');
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (aValue < bValue) return newDir === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return newDir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                // Reappend rows in sorted order
+                const tbody = rows[0].parentNode;
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    });
+</script>

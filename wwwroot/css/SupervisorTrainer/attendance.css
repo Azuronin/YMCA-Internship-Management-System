@@ -1,0 +1,31 @@
+﻿.admin-attendance-container {
+    padding: 25px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+    .admin-attendance-container h2 {
+        font-weight: 600;
+    }
+
+.table th, .table td {
+    vertical-align: middle;
+    text-align: center;
+    font-size: 0.95rem;
+    padding: 10px;
+}
+
+.badge {
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+#attendanceSearch {
+    max-width: 400px;
+    margin-bottom: 10px;
+}
+
+.table-responsive {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow-x: auto;
+}
